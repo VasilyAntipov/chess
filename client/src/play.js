@@ -6,6 +6,11 @@ const heightCell = 60;
 const startX = 50;
 const startY = 0;
 
+newGame.addEventListener('click', function (event) {
+  generateCoordinate('black');
+  generateFigures('black');
+});
+
 function generateCoordinate(color) {
   const layot = document.getElementById('chessboard-layot');
   const xmlns = 'http://www.w3.org/2000/svg';
@@ -54,12 +59,7 @@ function generateCoordinate(color) {
   layot.appendChild(svg);
 }
 
-newGame.addEventListener('click', function (event) {
-  generateCoordinate('black');
-  generateFigures();
-});
-
-function generateFigures() {
+function generateFigures(color) {
   const arrayChess = [
     ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr'],
     ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'],
@@ -75,21 +75,12 @@ function generateFigures() {
     for (let j = 0; j < 8; j++) {
       if (arrayChess[i][j]) {
         // createFigure(i, j, arrayChess[i][j]);
-        let figure = new Figure(i+1,j+1,arrayChess[i][j]);
-        figure.addFigure();
-        figure.move();
+        let figure = new Figure(i + 1, j + 1, arrayChess[i][j]);
+        figure.addFigure(color);
+        figure.move(color);
       }
     }
   }
-  // createFigure(1, 1, wp);
-  // createFigure(1, 2, wp);
-  // dragAndDrop(1,1,wp)
-  // dragAndDrop(1,2,wp)
-  // let chessWp = new Figure(1, 1, 'wp');
-  // let chessWr = new Figure(1, 2, 'br');
-  // chessWp.addFigure();
-  // chessWr.addFigure();
-  // chessWp.move();
 }
 
 function createFigure(x, y, obj) {
@@ -111,27 +102,31 @@ class Figure {
     this.x = x;
     this.y = y;
     this.name = name;
-    this.figure = document.createElement('div');
+    this.ElemDiv = document.createElement('div');
+    let matrix;
 
-    this.addFigure = function () {
+    this.addFigure = function (color) {
       const kef = 60;
-      // const figure = document.createElement('div');
+
       const board = document.getElementById('chessboard-blank');
-      this.figure.className = `piece ${this.name} square${this.x}${this.y}`;
-      this.figure.style.backgroundImage = `url('/chess/client/img/figures/${this.name}.png')`;
-      this.figure.style.transform = `
-        matrix(1, 0, 0, 1, 
-        ${(this.y - 1) * kef}, 
-        ${kef * 8 - this.x * kef})
-      `;
-      this.figure.id = 'ch' + this.x + this.y;
-      board.appendChild(this.figure);
+
+      this.ElemDiv.className = `piece ${this.name} square${this.x}${this.y}`;
+      this.ElemDiv.style.backgroundImage = `url('/chess/client/img/figures/${this.name}.png')`;
+      this.ElemDiv.style.transform = `
+      matrix(1, 0, 0, 1, 
+      ${getCoordinates(x, y, color, kef).x},
+      ${getCoordinates(x, y, color, kef).y}
+    `;
+      getCoordinates(x, y, color, kef);
+      this.ElemDiv.id = 'ch' + x + y;
+      board.appendChild(this.ElemDiv);
+      let style = window.getComputedStyle(this.ElemDiv, null);
+
+      matrix = style.transform;
     };
 
-    this.move = function () {
-      const x = this.x;
-      const y = this.y;
-      const ball = this.figure;
+    this.move = function (color) {
+      const ball = this.ElemDiv;
 
       // ball.ondragstart = function () {
       //   return false;
@@ -139,22 +134,22 @@ class Figure {
       let Cx, Cy;
 
       ball.onmousedown = function (event) {
-
+        
         board.appendChild(ball);
         ball.style.cursor = 'grabbing';
-        
+
         moveAt(event.pageX, event.pageY);
 
         function moveAt(pageX, pageY) {
           const kef = 60;
-          Cx = pageX - 165 - x * kef - ball.offsetWidth / 2;
-          Cy = pageY - y * 60 - ball.offsetHeight / 2;
+          const rect = board.getBoundingClientRect();
+
+          Cx = pageX - rect.x - getCoordinates(x,y,color,kef).x - ball.offsetWidth / 2;
+          Cy = pageY - rect.y - getCoordinates(x,y,color,kef).y - ball.offsetHeight / 2;
+  
           ball.style.left = Cx + 'px';
           ball.style.top = Cy + 'px';
-          // console.log(pageX + ';' + pageY)
-          // ball.style.left = pageX -x*kef + 'px';
-          // ball.style.top = pageY -120+ 'px'
-        }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+        }
 
         function onMouseMove(event) {
           moveAt(event.pageX, event.pageY);
@@ -162,22 +157,32 @@ class Figure {
 
         document.addEventListener('mousemove', onMouseMove);
 
-        // ball.onmouseup = function () {
-        //   ball.style.left = Math.round(Cx / 60) * 60 + 'px';
-        //   ball.style.top = Math.round(Cy / 60) * 60 + 'px';
-        //   document.removeEventListener('mousemove', onMouseMove);
-        //   ball.onmouseup = null;
-        // };
         ball.onmouseup = function () {
           ball.style.left = Math.round(Cx / 60) * 60 + 'px';
           ball.style.top = Math.round(Cy / 60) * 60 + 'px';
+          // ball.style.left = Cx + 'px';
+          // ball.style.top = Cy + 'px';
           document.removeEventListener('mousemove', onMouseMove);
           ball.onmouseup = null;
         };
-
       };
     };
   }
+}
+
+function getCoordinates(x, y, color, kef) {
+  let strX, strY;
+  switch (color) {
+    case 'white':
+      strX = (y - 1) * kef;
+      strY = (8 - x) * kef;
+      break;
+    case 'black':
+      strX = (8 - y) * kef;
+      strY = (x - 1) * kef;
+      break;
+  }
+  return {x: strX, y:strY};
 }
 
 function dragAndDrop(i, j, type) {
