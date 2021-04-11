@@ -1,0 +1,137 @@
+body {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial,
+    sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+#container {
+  position: relative;
+}
+
+#main-menu {
+  padding-top: 30px;
+  position: fixed;
+  width: 165px;
+  background-color: #262421;
+  height: 570px;
+  display: inline-block;
+  text-align: center;
+}
+
+.menu-link {
+  padding-left: 20px;
+  width: 145px;
+  height: 25px;
+  display: inline-block;
+  text-align: left;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.menu-link:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+
+a {
+  text-decoration: none;
+  color: #dfdfdfb0;
+}
+
+a:hover {
+  color: white;
+}
+
+img {
+  top: 15px;
+}
+
+#body-page {
+  position: absolute;
+  left: 165px;
+  display: flexbox;
+  width: 1000px;
+  background-color: rgba(0, 0, 0, 0.85);
+
+  height: 600px;
+  display: inline-block;
+}
+
+#svg {
+  position: absolute;
+  left: 35px;
+  top: 80px;
+  display: block;
+}
+
+#chessboard-blank {
+  left: 60px;
+  top: 60px;
+  width: 480px;
+  height: 480px;
+  display: block;
+  position: relative;
+  background-image: url('/chess/client/img/150.png');
+  background-size: 100%;
+}
+
+.play-page-menu {
+  left: 600px;
+  top: 60px;
+  position: absolute;
+  display: block;
+}
+
+.play-page-menu-start {
+  position: relative;
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  width: 180px;
+  height: 70px;
+  background-color: rgba(0, 0, 0, 0.35);
+}
+
+.play-page-menu span {
+  margin-top: 25px;
+  display: inline-block;
+}
+
+.play-page-menu:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+
+.coordinate-grey {
+  fill: #dfdfdfb0;
+  font-size: 3.1px;
+  box-sizing: border-box;
+  display: block;
+}
+
+button {
+  width: 150px;
+  height: 50px;
+  background-color: black;
+}
+
+.piece{
+  position: absolute;
+  background-size: 100%;
+  line-height: 20px;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  touch-action: none;
+  user-select:none;
+  width: 60px;
+  height: 60px;
+  display: block;
+  cursor: grabbing;
+  color: 'red';
+  box-sizing: border-box;
+  will-change: transform;
+  z-index: 1000;
+}
+
