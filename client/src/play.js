@@ -4,8 +4,8 @@ const board = document.getElementById('chessboard-blank');
 const kef = 60;
 
 newGame.addEventListener('click', function (event) {
-  generateCoordinate('black');
-  generateFigures('black');
+  generateCoordinate('white');
+  generateFigures('white');
 });
 
 function generateCoordinate(color) {
@@ -57,21 +57,31 @@ function generateCoordinate(color) {
 }
 
 function generateFigures(color) {
+  // const arrayChess = [
+  //   ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr'],
+  //   ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'],
+  //   [],
+  //   [],
+  //   [],
+  //   [],
+  //   ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'],
+  //   ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'],
+  // ];
+
   const arrayChess = [
-    ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr'],
-    ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'],
-    [],
-    [],
-    [],
-    [],
-    ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'],
-    ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'],
+    ['wr', 'wp', , , , , 'bp' ,'br'],
+    ['wn', 'wp', , , , , 'bp' ,'bn'],
+    ['wb', 'wp', , , , , 'bp' ,'bb'],
+    ['wq', 'wp', , , , , 'bp' ,'bq'],
+    ['wk', 'wp', , , , , 'bp' ,'bk'],
+    ['wb', 'wp', , , , , 'bp' ,'bb'],
+    ['wn', 'wp', , , , , 'bp' ,'bn'],
+    ['wr', 'wp', , , , , 'bp' ,'br'],
   ];
 
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
       if (arrayChess[i][j]) {
-        // createFigure(i, j, arrayChess[i][j]);
         let figure = new Figure(i + 1, j + 1, arrayChess[i][j]);
         figure.addFigure(color);
         figure.move(color);
@@ -104,26 +114,26 @@ class Figure {
     this.addFigure = function (color) {
       const board = document.getElementById('chessboard-blank');
 
-      this.ElemDiv.className = `piece ${this.name} square${this.x}${this.y}`;
-      this.ElemDiv.style.backgroundImage = `url('/chess/client/img/figures/${this.name}.png')`;
+      this.ElemDiv.className = `piece ${name} square${x}${y}`;
+      this.ElemDiv.style.backgroundImage = `url('/chess/client/img/figures/${name}.png')`;
       this.ElemDiv.style.transform = `
       matrix(1, 0, 0, 1, 
-      ${getCoordinates(x, y, color, kef).x},
-      ${getCoordinates(x, y, color, kef).y}
+      ${getCoordinates(x, y, color).x},
+      ${getCoordinates(x, y, color).y}
     `;
       getCoordinates(x, y, color, kef);
-      this.ElemDiv.id = 'ch' + x + y;
+      // this.ElemDiv.id = 'ch' + x + y;
       board.appendChild(this.ElemDiv);
-
     };
 
     this.move = function (color) {
       const ball = this.ElemDiv;
+
       let Cx, Cy;
 
       ball.onmousedown = function (event) {
-        
         board.appendChild(ball);
+
         ball.style.cursor = 'grabbing';
 
         moveAt(event.pageX, event.pageY);
@@ -131,9 +141,17 @@ class Figure {
         function moveAt(pageX, pageY) {
           const rect = board.getBoundingClientRect();
 
-          Cx = pageX - rect.x - getCoordinates(x,y,color,kef).x - ball.offsetWidth / 2;
-          Cy = pageY - rect.y - getCoordinates(x,y,color,kef).y - ball.offsetHeight / 2;
-  
+          Cx =
+            pageX -
+            rect.x -
+            getCoordinates(x, y, color, kef).x -
+            ball.offsetWidth / 2;
+          Cy =
+            pageY -
+            rect.y -
+            getCoordinates(x, y, color, kef).y -
+            ball.offsetHeight / 2;
+
           ball.style.left = Cx + 'px';
           ball.style.top = Cy + 'px';
         }
@@ -145,27 +163,67 @@ class Figure {
         document.addEventListener('mousemove', onMouseMove);
 
         ball.onmouseup = function () {
-          ball.style.left = Math.round(Cx / 60) * 60 + 'px';
-          ball.style.top = Math.round(Cy / 60) * 60 + 'px';
+          // ball.style.left = Math.round(Cx / 60) * 60 + 'px';
+          // ball.style.top = Math.round(Cy / 60) * 60 + 'px';
+          let xDif = Math.round(Cx / 60);
+          let yDif = Math.round(Cy / 60);
+
+          let NewCorX = getCoordinates(x, y, color).x + xDif*kef
+          let NewCorY = getCoordinates(x, y, color).y + yDif*kef
+          alert(`${xDif} ${yDif}
+          ${x} ${y}
+          ${x+xDif} ${y-yDif}
+          ${ball.style.transform}
+          `)
+          //0 -2
+          //5 2
+         
+
+          ball.style.left = 0;
+          ball.style.top = 0;
+          ball.style.transform = `
+          matrix(1, 0, 0, 1, 
+          ${NewCorX},
+          ${NewCorY}
+        `;
+
+          ball.className = `piece ${name} square${x+xDif}${y-yDif}`;
           document.removeEventListener('mousemove', onMouseMove);
           ball.onmouseup = null;
+          x = x + xDif;
+          y = y - yDif;
         };
       };
     };
   }
 }
 
-function getCoordinates(x, y, color, kef) {
+// function getCoordinates(x, y, color, kef) {
+//   let strX, strY;
+//   switch (color) {
+//     case 'white':
+//       strX = (y - 1) * kef;
+//       strY = (8 - x) * kef;
+//       break;
+//     case 'black':
+//       strX = (8 - y) * kef;
+//       strY = (x - 1) * kef;
+//       break;
+//   }
+//   return { x: strX, y: strY };
+// }
+
+function getCoordinates(x, y, color) {
   let strX, strY;
   switch (color) {
     case 'white':
-      strX = (y - 1) * kef;
-      strY = (8 - x) * kef;
+      strX = (x - 1) * kef;
+      strY = (8 - y) * kef;
       break;
     case 'black':
-      strX = (8 - y) * kef;
-      strY = (x - 1) * kef;
+      strX = (8 - x) * kef;
+      strY = (y - 1) * kef;
       break;
   }
-  return {x: strX, y:strY};
+  return { x: strX, y: strY };
 }
