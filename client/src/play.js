@@ -1,10 +1,7 @@
 const newGame = document.getElementById('new-game');
 const board = document.getElementById('chessboard-blank');
 
-const widthCell = 60;
-const heightCell = 60;
-const startX = 50;
-const startY = 0;
+const kef = 60;
 
 newGame.addEventListener('click', function (event) {
   generateCoordinate('black');
@@ -103,11 +100,8 @@ class Figure {
     this.y = y;
     this.name = name;
     this.ElemDiv = document.createElement('div');
-    let matrix;
 
     this.addFigure = function (color) {
-      const kef = 60;
-
       const board = document.getElementById('chessboard-blank');
 
       this.ElemDiv.className = `piece ${this.name} square${this.x}${this.y}`;
@@ -120,17 +114,11 @@ class Figure {
       getCoordinates(x, y, color, kef);
       this.ElemDiv.id = 'ch' + x + y;
       board.appendChild(this.ElemDiv);
-      let style = window.getComputedStyle(this.ElemDiv, null);
 
-      matrix = style.transform;
     };
 
     this.move = function (color) {
       const ball = this.ElemDiv;
-
-      // ball.ondragstart = function () {
-      //   return false;
-      // };
       let Cx, Cy;
 
       ball.onmousedown = function (event) {
@@ -141,7 +129,6 @@ class Figure {
         moveAt(event.pageX, event.pageY);
 
         function moveAt(pageX, pageY) {
-          const kef = 60;
           const rect = board.getBoundingClientRect();
 
           Cx = pageX - rect.x - getCoordinates(x,y,color,kef).x - ball.offsetWidth / 2;
@@ -160,8 +147,6 @@ class Figure {
         ball.onmouseup = function () {
           ball.style.left = Math.round(Cx / 60) * 60 + 'px';
           ball.style.top = Math.round(Cy / 60) * 60 + 'px';
-          // ball.style.left = Cx + 'px';
-          // ball.style.top = Cy + 'px';
           document.removeEventListener('mousemove', onMouseMove);
           ball.onmouseup = null;
         };
@@ -183,41 +168,4 @@ function getCoordinates(x, y, color, kef) {
       break;
   }
   return {x: strX, y:strY};
-}
-
-function dragAndDrop(i, j, type) {
-  // const ball = document.getElementsByClassName('ch' + (i + 1) + (j + 1));
-  // let ball = document.getElementsByClassName('ch' + (i + 1) + (j + 1));
-  let ball = document.getElementById('ch' + i + j);
-  ball.ondragstart = function () {
-    return false;
-  };
-  let x, y;
-
-  ball.onmousedown = function (event) {
-    board.appendChild(ball);
-
-    ball.style.cursor = 'grabbing';
-    moveAt(event.pageX, event.pageY);
-
-    function moveAt(pageX, pageY) {
-      x = pageX - 165 - j * 60 - ball.offsetWidth / 2;
-      y = pageY - i * 60 - ball.offsetHeight / 2;
-      ball.style.left = x + 'px';
-      ball.style.top = y + 'px';
-    }
-
-    function onMouseMove(event) {
-      moveAt(event.pageX, event.pageY);
-    }
-
-    document.addEventListener('mousemove', onMouseMove);
-
-    ball.onmouseup = function () {
-      ball.style.left = Math.round(x / 60) * 60 + 'px';
-      ball.style.top = Math.round(y / 60) * 60 + 'px';
-      document.removeEventListener('mousemove', onMouseMove);
-      ball.onmouseup = null;
-    };
-  };
 }
