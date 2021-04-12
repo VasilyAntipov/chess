@@ -101,6 +101,7 @@ class Figure {
       const board = document.getElementById('chessboard-blank');
 
       this.ElemDiv.className = `piece ${name} square${x}${y}`;
+
       this.ElemDiv.style.backgroundImage = `url('/chess/client/img/figures/${name}.png')`;
       this.ElemDiv.style.transform = `
       matrix(1, 0, 0, 1, 
@@ -117,15 +118,14 @@ class Figure {
       let Cx, Cy;
 
       ball.onmousedown = function (event) {
-        board.appendChild(ball);
+        document.addEventListener('mousemove', onMouseMove);
 
-        ball.style.cursor = 'grabbing';
-
-        moveAt(event.pageX, event.pageY);
+        function onMouseMove(event) {
+          moveAt(event.pageX, event.pageY);
+        }
 
         function moveAt(pageX, pageY) {
           const rect = board.getBoundingClientRect();
-
           Cx =
             pageX -
             rect.x -
@@ -141,20 +141,19 @@ class Figure {
           ball.style.top = Cy + 'px';
         }
 
-        function onMouseMove(event) {
-          moveAt(event.pageX, event.pageY);
-        }
+        board.appendChild(ball);
+        moveAt(event.pageX, event.pageY);
 
-        document.addEventListener('mousemove', onMouseMove);
-
+        ball.style.cursor = 'grabbing';
         ball.onmouseup = function () {
-          let xDif = Math.round(Cx / 60);
-          let yDif = Math.round(Cy / 60);
+          let xDif = Math.round(Cx / kef);
+          let yDif = Math.round(Cy / kef);
 
           let NewCorX = getCoordinates(x, y, color).x + xDif * kef;
           let NewCorY = getCoordinates(x, y, color).y + yDif * kef;
 
           let signX, signY;
+
           if (color == 'white') {
             signX = x + xDif;
             signY = y - yDif;
@@ -163,23 +162,48 @@ class Figure {
             signY = y + yDif;
           }
 
-          ball.style.left = 0;
-          ball.style.top = 0;
-          ball.style.transform = `
-          matrix(1, 0, 0, 1, 
-          ${NewCorX},
-          ${NewCorY}
-        `;
-          checkFriend();
-          checkRemoveEnemy(name, signX, signY);
+          putFigure(signX, signY, NewCorX, NewCorY);
 
-          ball.className = `piece ${name} square${signX}${signY}`;
-          ball.id = `${name}${signX}${signY}`;
+          checkTarget();
 
           document.removeEventListener('mousemove', onMouseMove);
           ball.onmouseup = null;
-          x = signX;
-          y = signY;
+
+          function checkTarget() {
+            let target = document.querySelector(`.square${signX}${signY}`);
+            if (
+              colorFigure(target.classList[1]) != colorFigure(ball.classList[1])
+            ) {
+              target.remove();
+              x = signX;
+              y = signY;
+            } else {
+              if (target.id != ball.id) {
+                putFigure(
+                  x,
+                  y,
+                  getCoordinates(x, y, color).x,
+                  getCoordinates(x, y, color).y
+                );
+              } else {
+                x = signX;
+                y = signY;
+              }
+            }
+          }
+
+          function putFigure(xtemp, ytemp, newCorTempX, newCorTempY) {
+            ball.style.left = 0;
+            ball.style.top = 0;
+            ball.style.transform = `
+            matrix(1, 0, 0, 1, 
+            ${newCorTempX},
+            ${newCorTempY}
+          `;
+            ball.className = `piece ${name} square${xtemp}${ytemp}`;
+          }
+
+          // checkTarget();
         };
       };
     };
@@ -207,11 +231,8 @@ function clearAll() {
   board.innerHTML = '';
 }
 
-function checkRemoveEnemy(name, x, y) {
-  let target = board.querySelector('.square' + x + y);
-  let ourFigure = board.querySelector('.' + name + ' square' + x + y);
-  // alert('.piece' + name + ' .square' + x + y);
-  if (target && target != ourFigure) {
-    target.remove();
-  }
+function colorFigure(name) {
+  let colorFigure;
+  if (name.slice(0, 1) == 'w') return 'white';
+  else return 'black';
 }

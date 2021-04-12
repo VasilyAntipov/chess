@@ -117,7 +117,7 @@ button {
   background-color: black;
 }
 
-.piece{
+.piece {
   position: absolute;
   background-size: 100%;
   line-height: 20px;
