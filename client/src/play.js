@@ -1,13 +1,13 @@
 const newGame = document.getElementById('new-game');
 const deleteFigure = document.getElementById('delete-figure');
 const board = document.getElementById('chessboard-blank');
-
 const kef = 60;
+let selectedValue;
 
 newGame.addEventListener('click', function (event) {
   clearAll();
   let checkBox = document.querySelectorAll('input[name="choice"]');
-  let selectedValue;
+
   for (const rb of checkBox) {
     if (rb.checked) {
       selectedValue = rb.value;
@@ -84,7 +84,6 @@ function generateFigures(color) {
       if (arrayChess[i][j]) {
         let figure = new Figure(i + 1, j + 1, arrayChess[i][j]);
         figure.addFigure(color);
-        figure.canMove(color);
       }
     }
   }
@@ -112,99 +111,108 @@ class Figure {
       board.appendChild(this.ElemDiv);
     };
 
-    this.canMove = function (color) {
-      const ball = this.ElemDiv;
+    let color = selectedValue;
+    const ball = this.ElemDiv;
+    let Cx, Cy;
 
-      let Cx, Cy;
+    ball.onmousedown = function (event) {
 
-      ball.onmousedown = function (event) {
-        document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mousemove', onMouseMove);
 
-        function onMouseMove(event) {
-          moveAt(event.pageX, event.pageY);
-        }
-
-        function moveAt(pageX, pageY) {
-          const rect = board.getBoundingClientRect();
-          Cx =
-            pageX -
-            rect.x -
-            getCoordinates(x, y, color, kef).x -
-            ball.offsetWidth / 2;
-          Cy =
-            pageY -
-            rect.y -
-            getCoordinates(x, y, color, kef).y -
-            ball.offsetHeight / 2;
-
-          ball.style.left = Cx + 'px';
-          ball.style.top = Cy + 'px';
-        }
-
-        board.appendChild(ball);
+      function onMouseMove(event) {
         moveAt(event.pageX, event.pageY);
+      }
 
-        ball.style.cursor = 'grabbing';
-        ball.onmouseup = function () {
-          let xDif = Math.round(Cx / kef);
-          let yDif = Math.round(Cy / kef);
+      function moveAt(pageX, pageY) {
+        const rect = board.getBoundingClientRect();
+        Cx =
+          pageX -
+          rect.x -
+          getCoordinates(x, y, color, kef).x -
+          ball.offsetWidth / 2;
+        Cy =
+          pageY -
+          rect.y -
+          getCoordinates(x, y, color, kef).y -
+          ball.offsetHeight / 2;
 
-          let NewCorX = getCoordinates(x, y, color).x + xDif * kef;
-          let NewCorY = getCoordinates(x, y, color).y + yDif * kef;
+        ball.style.left = Cx + 'px';
+        ball.style.top = Cy + 'px';
+      }
 
-          let signX, signY;
+      board.appendChild(ball);
+      moveAt(event.pageX, event.pageY);
 
-          if (color == 'white') {
-            signX = x + xDif;
-            signY = y - yDif;
-          } else if (color == 'black') {
-            signX = x - xDif;
-            signY = y + yDif;
+      ball.style.cursor = 'grabbing';
+      ball.onmouseup = function () {
+        let xDif = Math.round(Cx / kef);
+        let yDif = Math.round(Cy / kef);
+
+        let NewCorX = getCoordinates(x, y, color).x + xDif * kef;
+        let NewCorY = getCoordinates(x, y, color).y + yDif * kef;
+
+        let signX, signY;
+
+        if (color == 'white') {
+          signX = x + xDif;
+          signY = y - yDif;
+        } else if (color == 'black') {
+          signX = x - xDif;
+          signY = y + yDif;
+        }
+
+        putFigure(signX, signY, NewCorX, NewCorY);
+
+        checkTarget();
+
+        document.removeEventListener('mousemove', onMouseMove);
+        ball.onmouseup = null;
+
+        function checkMove() {
+          if (name = 'wp') {
+            
           }
+        }
 
-          putFigure(signX, signY, NewCorX, NewCorY);
-
-          checkTarget();
-
-          document.removeEventListener('mousemove', onMouseMove);
-          ball.onmouseup = null;
-
-          function checkTarget() {
-            let target = document.querySelector(`.square${signX}${signY}`);
-            if (
-              colorFigure(target.classList[1]) != colorFigure(ball.classList[1])
-            ) {
-              target.remove();
+        function checkTarget() {
+          let target = document.querySelector(`.square${signX}${signY}`);
+          if (
+            colorFigure(target.classList[1]) != colorFigure(ball.classList[1])
+          ) {
+            target.remove();
+            x = signX;
+            y = signY;
+          } else {
+            if (target.id != ball.id) {
+              putFigure(
+                x,
+                y,
+                getCoordinates(x, y, color).x,
+                getCoordinates(x, y, color).y
+              );
+            } else {
               x = signX;
               y = signY;
-            } else {
-              if (target.id != ball.id) {
-                putFigure(
-                  x,
-                  y,
-                  getCoordinates(x, y, color).x,
-                  getCoordinates(x, y, color).y
-                );
-              } else {
-                x = signX;
-                y = signY;
-              }
             }
           }
+        }
 
-          function putFigure(xtemp, ytemp, newCorTempX, newCorTempY) {
-            ball.style.left = 0;
-            ball.style.top = 0;
-            ball.style.transform = `
+        function putFigure(xtemp, ytemp, newCorTempX, newCorTempY) {
+          ball.style.left = 0;
+          ball.style.top = 0;
+          ball.style.transform = `
             matrix(1, 0, 0, 1, 
             ${newCorTempX},
             ${newCorTempY}
           `;
-            ball.className = `piece ${name} square${xtemp}${ytemp}`;
-          }
+          ball.className = `piece ${name} square${xtemp}${ytemp}`;
+        }
 
-          // checkTarget();
-        };
+        function colorFigure(name) {
+          let colorFigure;
+          if (name.slice(0, 1) == 'w') return 'white';
+          else return 'black';
+        }
       };
     };
   }
@@ -226,13 +234,8 @@ function getCoordinates(x, y, color) {
 }
 
 function clearAll() {
-  const layot = document.getElementById('chessboard-layot');
-
+  let texts = document.getElementsByClassName('text');
   board.innerHTML = '';
 }
 
-function colorFigure(name) {
-  let colorFigure;
-  if (name.slice(0, 1) == 'w') return 'white';
-  else return 'black';
-}
+
