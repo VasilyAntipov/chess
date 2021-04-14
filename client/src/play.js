@@ -68,55 +68,90 @@ function generateCoordinate(color) {
 }
 
 function generateFigures(color) {
+  const pawn = {
+    name: 'p',
+    move: ['f1'],
+  };
+  const rook = {
+    name: 'r',
+    move: ['f', 'b', 's'],
+  };
+  const knight = {
+    name: 'n',
+    move: ['h'],
+  };
+  const bishop = {
+    name: 'b',
+    move: ['d'],
+  };
+  const king = {
+    name: 'k',
+    move: ['f', 'b', 's', 'd'],
+  };
+  const queen = {
+    name: 'q',
+    move: ['f', 'b', 's', 'd'],
+  };
+
+  let figure;
+
   const arrayChess = [
-    ['wr', 'wp', , , , , 'bp', 'br'],
-    ['wn', 'wp', , , , , 'bp', 'bn'],
-    ['wb', 'wp', , , , , 'bp', 'bb'],
-    ['wq', 'wp', , , , , 'bp', 'bq'],
-    ['wk', 'wp', , , , , 'bp', 'bk'],
-    ['wb', 'wp', , , , , 'bp', 'bb'],
-    ['wn', 'wp', , , , , 'bp', 'bn'],
-    ['wr', 'wp', , , , , 'bp', 'br'],
+    [rook, pawn, , , , , pawn, rook],
+    [knight, pawn, , , , , pawn, knight],
+    [bishop, pawn, , , , , pawn, bishop],
+    [queen, pawn, , , , , pawn, queen],
+    [king, pawn, , , , , pawn, king],
+    [bishop, pawn, , , , , pawn, bishop],
+    [knight, pawn, , , , , pawn, knight],
+    [rook, pawn, , , , , pawn, rook],
   ];
 
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
       if (arrayChess[i][j]) {
-        let figure = new Figure(i + 1, j + 1, arrayChess[i][j]);
-        figure.addFigure(color);
+        if (arrayChess[i][j]) {
+          figure = new Figure(i + 1, j + 1, arrayChess[i][j]);
+          figure.addFigure(color);
+        }
       }
     }
   }
 }
 
 class Figure {
-  constructor(x, y, name) {
+  constructor(x, y, obj) {
     this.x = x;
     this.y = y;
-    this.name = name;
-    this.ElemDiv = document.createElement('div');
+    this.elemDiv = document.createElement('div');
+    let name;
+
+    if (this.y < 3) {
+      name = 'w' + obj.name;
+    }
+    if (this.y > 6) {
+      name = 'b' + obj.name;
+    }
 
     this.addFigure = function (color) {
       const board = document.getElementById('chessboard-blank');
 
-      this.ElemDiv.className = `piece ${name} square${x}${y}`;
+      this.elemDiv.className = `piece ${name} square${x}${y}`;
 
-      this.ElemDiv.style.backgroundImage = `url('/chess/client/img/figures/${name}.png')`;
-      this.ElemDiv.style.transform = `
+      this.elemDiv.style.backgroundImage = `url('/chess/client/img/figures/${name}.png')`;
+      this.elemDiv.style.transform = `
       matrix(1, 0, 0, 1, 
       ${getCoordinates(x, y, color).x},
       ${getCoordinates(x, y, color).y}
     `;
-      this.ElemDiv.id = name + x + y;
-      board.appendChild(this.ElemDiv);
+      this.elemDiv.id = name + x + y;
+      board.appendChild(this.elemDiv);
     };
 
     let color = selectedValue;
-    const ball = this.ElemDiv;
+    const ball = this.elemDiv;
     let Cx, Cy;
 
     ball.onmousedown = function (event) {
-
       document.addEventListener('mousemove', onMouseMove);
 
       function onMouseMove(event) {
@@ -145,73 +180,100 @@ class Figure {
 
       ball.style.cursor = 'grabbing';
       ball.onmouseup = function () {
+        let flag;
         let xDif = Math.round(Cx / kef);
         let yDif = Math.round(Cy / kef);
 
-        let NewCorX = getCoordinates(x, y, color).x + xDif * kef;
-        let NewCorY = getCoordinates(x, y, color).y + yDif * kef;
+        let newMatrixX = getCoordinates(x, y, color).x + xDif * kef;
+        let newMatrixY = getCoordinates(x, y, color).y + yDif * kef;
 
-        let signX, signY;
+        let newX, newY;
 
         if (color == 'white') {
-          signX = x + xDif;
-          signY = y - yDif;
+          newX = x + xDif;
+          newY = y - yDif;
         } else if (color == 'black') {
-          signX = x - xDif;
-          signY = y + yDif;
+          newX = x - xDif;
+          newY = y + yDif;
         }
 
-        putFigure(signX, signY, NewCorX, NewCorY);
+        if (canMove() == 'can') {
+          putFigure(newX, newY, newMatrixX, newMatrixY);
+        } else {
+          backFigure();
+        }
 
         checkTarget();
 
         document.removeEventListener('mousemove', onMouseMove);
         ball.onmouseup = null;
 
-        function checkMove() {
-          if (name = 'wp') {
-            
-          }
-        }
-
         function checkTarget() {
-          let target = document.querySelector(`.square${signX}${signY}`);
+          if (flag == 'stop') return;
+          let target = document.querySelector(`.square${newX}${newY}`);
           if (
             colorFigure(target.classList[1]) != colorFigure(ball.classList[1])
           ) {
             target.remove();
-            x = signX;
-            y = signY;
+            x = newX;
+            y = newY;
           } else {
             if (target.id != ball.id) {
-              putFigure(
-                x,
-                y,
-                getCoordinates(x, y, color).x,
-                getCoordinates(x, y, color).y
-              );
+              backFigure();
             } else {
-              x = signX;
-              y = signY;
+              x = newX;
+              y = newY;
             }
           }
         }
 
-        function putFigure(xtemp, ytemp, newCorTempX, newCorTempY) {
+        function backFigure() {
+          putFigure(
+            x,
+            y,
+            getCoordinates(x, y, color).x,
+            getCoordinates(x, y, color).y
+          );
+          flag = 'stop';
+        }
+
+        function putFigure(x, y, matrixX, matrixY) {
           ball.style.left = 0;
           ball.style.top = 0;
           ball.style.transform = `
             matrix(1, 0, 0, 1, 
-            ${newCorTempX},
-            ${newCorTempY}
+            ${matrixX},
+            ${matrixY})
           `;
-          ball.className = `piece ${name} square${xtemp}${ytemp}`;
+          ball.className = `piece ${name} square${x}${y}`;
         }
 
         function colorFigure(name) {
-          let colorFigure;
           if (name.slice(0, 1) == 'w') return 'white';
           else return 'black';
+        }
+
+        function canMove() {
+          if (obj.move.includes('f') && xDif == 0 && yDif < 0) {
+            return 'can';
+          }
+
+          if (obj.move.includes('b') && xDif == 0 && yDif > 0) {
+            return 'can';
+          }
+
+          if (obj.move.includes('s') && yDif == 0 && xDif != 0) {
+            return 'can';
+          }
+
+          if (obj.move.includes('d') && xDif != 0 && Math.abs(xDif) == Math.abs(yDif)) {
+            return 'can';
+          }
+
+          if (obj.move.includes('h') && yDif != 0 && xDif != 0 
+          && (Math.abs(xDif)+Math.abs(yDif)) == 3) {
+            return 'can';
+          }
         }
       };
     };
@@ -237,5 +299,3 @@ function clearAll() {
   let texts = document.getElementsByClassName('text');
   board.innerHTML = '';
 }
-
-
