@@ -70,7 +70,7 @@ function generateCoordinate(color) {
 function generateFigures(color) {
   const pawn = {
     name: 'p',
-    move: ['f1'],
+    move: ['p', 'one', 'd'],
   };
   const rook = {
     name: 'r',
@@ -86,14 +86,12 @@ function generateFigures(color) {
   };
   const king = {
     name: 'k',
-    move: ['f', 'b', 's', 'd'],
+    move: ['f', 'b', 's', 'd', 'one'],
   };
   const queen = {
     name: 'q',
     move: ['f', 'b', 's', 'd'],
   };
-
-  let figure;
 
   const arrayChess = [
     [rook, pawn, , , , , pawn, rook],
@@ -110,7 +108,7 @@ function generateFigures(color) {
     for (let j = 0; j < 8; j++) {
       if (arrayChess[i][j]) {
         if (arrayChess[i][j]) {
-          figure = new Figure(i + 1, j + 1, arrayChess[i][j]);
+          let figure = new Figure(i + 1, j + 1, arrayChess[i][j]);
           figure.addFigure(color);
         }
       }
@@ -132,6 +130,8 @@ class Figure {
       name = 'b' + obj.name;
     }
 
+    let color = selectedValue;
+
     this.addFigure = function (color) {
       const board = document.getElementById('chessboard-blank');
 
@@ -147,7 +147,6 @@ class Figure {
       board.appendChild(this.elemDiv);
     };
 
-    let color = selectedValue;
     const ball = this.elemDiv;
     let Cx, Cy;
 
@@ -209,8 +208,10 @@ class Figure {
         ball.onmouseup = null;
 
         function checkTarget() {
-          if (flag == 'stop') return;
+          if (flag == 'stopCheckTarget') return;
+
           let target = document.querySelector(`.square${newX}${newY}`);
+
           if (
             colorFigure(target.classList[1]) != colorFigure(ball.classList[1])
           ) {
@@ -234,7 +235,7 @@ class Figure {
             getCoordinates(x, y, color).x,
             getCoordinates(x, y, color).y
           );
-          flag = 'stop';
+          flag = 'stopCheckTarget';
         }
 
         function putFigure(x, y, matrixX, matrixY) {
@@ -254,6 +255,32 @@ class Figure {
         }
 
         function canMove() {
+          let S;
+          if (ball.classList[1].slice(0, 1) == 'w') S = 1;
+          if (ball.classList[1].slice(0, 1) == 'b') S = -1;
+
+          if (obj.move.includes('p')) {
+            let target = document.querySelector(`.square${newX}${newY}`);
+
+            if (xDif == 0 && yDif * S == -1) {
+              if (target) return;
+              return 'can';
+            }
+
+            if ((y == 2 && yDif == -2) || (y == 7 && yDif == 2)) {
+              if (target || document.querySelector(`.square${newX}${newY - S}`))
+                return;
+              return 'can';
+            }
+          }
+
+          if (
+            obj.move.includes('one') &&
+            (Math.abs(xDif) > 1 || Math.abs(yDif) > 1)
+          ) {
+            return;
+          }
+
           if (obj.move.includes('f') && xDif == 0 && yDif < 0) {
             return 'can';
           }
@@ -266,12 +293,20 @@ class Figure {
             return 'can';
           }
 
-          if (obj.move.includes('d') && xDif != 0 && Math.abs(xDif) == Math.abs(yDif)) {
+          if (
+            obj.move.includes('d') &&
+            xDif != 0 &&
+            Math.abs(xDif) == Math.abs(yDif)
+          ) {
             return 'can';
           }
 
-          if (obj.move.includes('h') && yDif != 0 && xDif != 0 
-          && (Math.abs(xDif)+Math.abs(yDif)) == 3) {
+          if (
+            obj.move.includes('h') &&
+            yDif != 0 &&
+            xDif != 0 &&
+            Math.abs(xDif) + Math.abs(yDif) == 3
+          ) {
             return 'can';
           }
         }
