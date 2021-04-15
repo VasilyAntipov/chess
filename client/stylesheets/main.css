@@ -76,6 +76,17 @@ img {
   position: relative;
   background-image: url('/chess/client/img/150.png');
   background-size: 100%;
+  z-index: 700;
+}
+
+.svg-layot {
+  width: 480px;
+  height: 480px;
+  display: block;
+  position: absolute;
+  left:60px;
+  top:60px;
+  z-index: 500;
 }
 
 .play-page-menu {
@@ -115,7 +126,7 @@ button {
   width: 150px;
   height: 50px;
   background-color: black;
-  color:white;
+  color: white;
 }
 
 .piece {
@@ -125,7 +136,7 @@ button {
   overflow-x: hidden;
   overflow-y: hidden;
   touch-action: none;
-  user-select:none;
+  user-select: none;
   width: 60px;
   height: 60px;
   display: block;
@@ -137,5 +148,13 @@ button {
 }
 
 form {
-  color:white;
+  color: white;
+}
+
+.rect {
+  width: 58px;
+  height: 58px;
+  fill : rgba(255, 217, 0, 0.527);
+  stroke: white;
+  stroke-width: 2;
 }

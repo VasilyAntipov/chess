@@ -1,8 +1,11 @@
 const newGame = document.getElementById('new-game');
 const deleteFigure = document.getElementById('delete-figure');
 const board = document.getElementById('chessboard-blank');
+const svgLayot = document.querySelector('.svg-layot');
 const kef = 60;
 let selectedValue;
+
+
 
 newGame.addEventListener('click', function (event) {
   clearAll();
@@ -70,7 +73,7 @@ function generateCoordinate(color) {
 function generateFigures(color) {
   const pawn = {
     name: 'p',
-    move: ['p', 'one', 'd'],
+    move: ['p', 'one'],
   };
   const rook = {
     name: 'r',
@@ -107,10 +110,8 @@ function generateFigures(color) {
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
       if (arrayChess[i][j]) {
-        if (arrayChess[i][j]) {
-          let figure = new Figure(i + 1, j + 1, arrayChess[i][j]);
-          figure.addFigure(color);
-        }
+        let figure = new Figure(i + 1, j + 1, arrayChess[i][j]);
+        figure.addFigure(color);
       }
     }
   }
@@ -196,6 +197,53 @@ class Figure {
           newY = y + yDif;
         }
 
+        clickFigure();
+//////////////////////////не работает
+        function clickFigure() {
+          if (x == newX && y == newY) {
+            svgLayot.innerHTML = `<rect class="rect"
+            transform = "matrix(1, 0, 0, 1, ${getCoordinates(x, y, color).x},${
+              getCoordinates(x, y, color).y
+            })"/>`;
+          }
+
+          board.addEventListener('click', function (event) {
+            const layot = board.getBoundingClientRect();
+            const pageX = event.pageX;
+            const pageY = event.pageY;
+
+            const clickX = Math.floor((pageX - layot.x) / kef);
+            const clickY = Math.floor((pageY - layot.y) / kef);
+
+            alert()
+            //animation(ball, clickX, clickY);
+            
+          });
+
+          function animation(elem, x,y) {
+            // let start = Date.now(); // запомнить время начала
+
+            let timer = setInterval(function () {
+              // сколько времени прошло с начала анимации?
+              // let timePassed = Date.now() - start;
+
+              if (timePassed >= 2000) {
+                clearInterval(timer); // закончить анимацию через 2 секунды
+                return;
+              }
+
+              // отрисовать анимацию на момент timePassed, прошедший с начала анимации
+              draw(timePassed);
+            }, 20);
+
+            // в то время как timePassed идёт от 0 до 2000
+            // left изменяет значение от 0px до 400px
+            function draw(timePassed) {
+              ball.style.left = timePassed / 5 + 'px';
+            }
+          }
+        }
+
         if (canMove() == 'can') {
           putFigure(newX, newY, newMatrixX, newMatrixY);
         } else {
@@ -262,7 +310,7 @@ class Figure {
           if (obj.move.includes('p')) {
             let target = document.querySelector(`.square${newX}${newY}`);
 
-            if (xDif == 0 && yDif * S == -1) {
+            if (yDif * S == -1 && xDif == 0) {
               if (target) return;
               return 'can';
             }
@@ -272,6 +320,25 @@ class Figure {
                 return;
               return 'can';
             }
+
+            if (yDif * S == -1 && Math.abs(xDif) == 1) {
+              if (target) {
+                return 'can';
+              }
+            }
+
+            if (
+              (y == 5 && S == 1) ||
+              (y == 4 && S == -1)
+              //&& ()
+              //тут идет проверка последнего хода противника от обработчика ходов
+            ) {
+              return 'can';
+              //удаляем div пешки сбоку по координатам
+            }
+          }
+
+          if (obj.move.includes('k')) {
           }
 
           if (
@@ -311,6 +378,10 @@ class Figure {
           }
         }
       };
+    };
+
+    ball.ondragstart = function () {
+      return false;
     };
   }
 }
