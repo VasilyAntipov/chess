@@ -6,6 +6,12 @@ const layot = document.getElementById('chessboard-layot');
 const arrayWords = ['a', 'b', 'c', 'd', 'e', 'f', 'j', 'h'];
 const kef = 60;
 let gameColor;
+let borda = [];
+for (let i = 0; i < 8; i++) {
+  for (let j = 0; j < 8; j++) {
+    borda.push({ x: i, y: j });
+  }
+}
 
 newGame.addEventListener('click', function (event) {
   clearAll();
@@ -155,7 +161,7 @@ class Figure {
     }
 
     this.addFigure = function () {
-      this.elemDiv.className = `piece ${name} square${x}${y}`;
+      this.elemDiv.className = `piece ${name} square-${x}${y}`;
 
       this.elemDiv.style.backgroundImage = `url('/chess/client/img/figures/${name}.png')`;
       this.elemDiv.style.transform = `
@@ -163,7 +169,8 @@ class Figure {
         ${coorX * kef},
         ${coorY * kef}
       `;
-      this.elemDiv.id = name + x + y;
+      this.elemDiv.id = 'id' + x + y;
+      this.elemDiv.color = color;
       board.appendChild(this.elemDiv);
     };
 
@@ -194,8 +201,6 @@ class Figure {
 
       ball.style.cursor = 'grabbing';
       ball.onmouseup = function () {
-        let flag;
-
         let xDif = Math.round(mouseX / kef);
         let yDif = Math.round(mouseY / kef);
 
@@ -204,72 +209,52 @@ class Figure {
 
         let [newX, newY] = CalcChessCoor(newCoorX, newCoorY);
 
-        // clickFigure();
-        //////////////////////////не работает
+        let S;
+        if (color == 'white') S = 1;
+        if (color == 'black') S = -1;
 
-        function clickFigure() {
-          if (x == newCoorX && y == newCoorY) {
-            svgLayot.innerHTML = `<rect class="rect"
-            transform = "matrix(1, 0, 0, 1, ${
-              getCoordinates(x, y, gameColor.bot).x
-            },${getCoordinates(x, y, gameColor.bot).y})"/>`;
+        let canMoveArray = canMove(coorX, coorY);
+        // let ArrayFiguresInWay = checkFigures(canMoveArray);
+
+        function logic() {}
+
+        if (
+          canMoveArray.find(
+            (coordinate) => coordinate.x == newCoorX && coordinate.y == newCoorY
+          )
+        ) {
+          console.log(canMoveArray);
+          console.log(newCoorX - coorX, newCoorY - coorY);
+          // clickFigure()
+          if (checkFigures(newX, newY) == 'check') {
+            putFigure(newCoorX, newCoorY);
+            updateCoordinates();
+          } else {
+            putFigure(coorX, coorY);
           }
-
-          board.addEventListener('click', function (event) {
-            const layot = board.getBoundingClientRect();
-            const pageX = event.pageX;
-            const pageY = event.pageY;
-
-            const clickX = Math.floor((pageX - layot.x) / kef);
-            const clickY = Math.floor((pageY - layot.y) / kef);
-
-            //animation(ball, clickX, clickY);
-          });
-
-          function animation(elem, x, y) {
-            // let start = Date.now(); // запомнить время начала
-
-            let timer = setInterval(function () {
-              // сколько времени прошло с начала анимации?
-              // let timePassed = Date.now() - start;
-
-              if (timePassed >= 2000) {
-                clearInterval(timer); // закончить анимацию через 2 секунды
-                return;
-              }
-
-              // отрисовать анимацию на момент timePassed, прошедший с начала анимации
-              draw(timePassed);
-            }, 20);
-
-            // в то время как timePassed идёт от 0 до 2000
-            // left изменяет значение от 0px до 400px
-            function draw(timePassed) {
-              ball.style.left = timePassed / 5 + 'px';
-            }
-          }
-        }
-
-        function updateCoordinates() {
-          x = newX;
-          y = newY;
-          coorX = newCoorX;
-          coorY = newCoorY;
-        }
-
-        if (canMove() == 'can' && checkAndRemoveTarget() == 'check') {
-          putFigure(newCoorX, newCoorY);
-          updateCoordinates();
         } else {
           putFigure(coorX, coorY);
-          flag = 'stopCheckTarget';
         }
 
         document.removeEventListener('mousemove', onMouseMove);
         ball.onmouseup = null;
 
-        function checkAndRemoveTarget() {
-          let target = document.querySelector(`.square${newX}${newY}`);
+        function checkFigures(newX, newY) {
+          let target = document.querySelector(`.square-${newX}${newY}`);
+          let result;
+
+          if (obj.name == 'p') {
+            if (Math.abs(newCoorX - coorX) == 1) {
+              if (target) {
+                target.remove();
+                result = 'check';
+              } else return;
+            } else {
+              if (target) return;
+              else result = 'check';
+            }
+          }
+
           if (target) {
             if (target.id != ball.id) {
               if (
@@ -290,89 +275,146 @@ class Figure {
             ${a * kef},
             ${b * kef})
           `;
-          ball.className = `piece ${name} square${CalcChessCoor(a, b)[0]}${
+          ball.className = `piece ${name} square-${CalcChessCoor(a, b)[0]}${
             CalcChessCoor(a, b)[1]
           }`;
-          ball.id = name + CalcChessCoor(a, b)[0] + CalcChessCoor(a, b)[1];
+          ball.id = 'id' + CalcChessCoor(a, b)[0] + CalcChessCoor(a, b)[1];
         }
 
-        function canMove() {
-          let S;
-          let chessDifX = x - newX;
-          let chessDifY = y - newY;
+        function canMove(x, y) {
+          let result = borda;
 
-          if (color == 'white') S = 1;
-          if (color == 'black') S = -1;
+          function eAbs(elem) {
+            return Math.abs(elem);
+          }
 
-          if (obj.move.includes('p')) {
-            let target = document.querySelector(`.square${newX}${newY}`);
+          switch (obj.name) {
+            case 'p':
+              console.log();
+              result = result.filter((elem) => {
+                if ((elem.y - y) * S == -1 && elem.x - x == 0) {
+                  return true;
+                }
+                if ((elem.y - y) * S == -1 && eAbs(elem.x - x) == 1)
+                  return true;
+                if (
+                  elem.x - x == 0 &&
+                  ((y == 6 && elem.y - y == -2) || (y == 1 && elem.y - y == 2))
+                )
+                  return true;
+              });
+              break;
 
-            if (chessDifY * S == -1 && chessDifX == 0) {
-              if (target) return;
-              return 'can';
+            case 'r':
+              result = result.filter((elem) => elem.x == x || elem.y == y);
+              break;
+            case 'n':
+              result = result.filter(
+                (elem) =>
+                  eAbs(elem.x - x) + eAbs(elem.y - y) == 3 &&
+                  elem.x - x != 0 &&
+                  elem.y - y != 0
+              );
+              break;
+            case 'b':
+              result = result.filter((elem) => {
+                eAbs(elem.x - x) == eAbs(elem.y - y);
+              });
+              break;
+            case 'q':
+              result = result.filter(
+                (elem) =>
+                  elem.x == x ||
+                  elem.y == y ||
+                  eAbs(elem.x - x) == eAbs(elem.y - y)
+              );
+              break;
+            case 'k':
+              result = result.filter(
+                (elem) =>
+                  eAbs(elem.x - x) + (eAbs(elem.y - y) == 1) ||
+                  eAbs(elem.x - x) + (elem.y - y) == 2
+              );
+              break;
+          }
+
+          
+
+          return result;
+        }
+
+        function clickFigure() {
+          console.log('click x:' + x + ' y:' + y);
+          svgLayot.innerHTML = `<rect class="rect"
+            transform = "matrix(1, 0, 0, 1, ${coorX * kef},${coorY * kef})"/>`;
+
+          // svgLayot.innerHTML += `<circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" />`
+
+          svgLayot.addEventListener('click', onClickBoard);
+
+          function onClickBoard(event) {
+            svgLayot.innerHTML = '';
+            const layot = svgLayot.getBoundingClientRect();
+            const pageX = event.pageX;
+            const pageY = event.pageY;
+
+            let clickX = Math.floor((pageX - layot.x) / 60);
+            let clickY = Math.floor((pageY - layot.y) / 60);
+
+            [newX, newY] = CalcChessCoor(clickX, clickY);
+
+            if (canMove(x, y, newX, newY) == 'can')
+              animation(coorX, coorY, clickX, clickY);
+            else {
+              svgLayot.removeEventListener('click', onClickBoard);
             }
 
-            if ((y == 2 && chessDifY == -2) || (y == 7 && chessDifY == 2)) {
-              if (target || document.querySelector(`.square${newX}${newY}`))
-                return;
-              return 'can';
+            document.removeEventListener('mousemove', onMouseMove);
+            ball.onmouseup = null;
+
+            function animation(fromX, fromY, toX, toY) {
+              console.log(fromX, fromY, toX, toY);
+              console.log(x, y, newX, newY);
+
+              let kefX = fromX >= toX ? 1 : -1;
+              let kefY = fromY >= toY ? 1 : -1;
+
+              let flagX = false;
+              let flagY = false;
+
+              let timerId = setTimeout(function move() {
+                if (fromY == toY) flagY = true;
+                if (fromX == toX) flagX = true;
+
+                if (flagY == true && flagX == true) {
+                  putFigure(toX, toY);
+                  clearTimeout(timerId);
+                  return;
+                }
+                if (flagX == false) fromX -= kefX * 0.25;
+                if (flagY == false) fromY -= kefY * 0.25;
+
+                ball.style.transform = `matrix(1, 0, 0, 1,${fromX * kef},${
+                  fromY * kef
+                })`;
+
+                coorY = fromY;
+                coorX = fromX;
+                x = newX;
+                y = newY;
+
+                timerId = setTimeout(move, 25);
+              }, 25);
+              svgLayot.removeEventListener('click', onClickBoard);
             }
-
-            if (chessDifY * S == -1 && Math.abs(chessDifX) == 1) {
-              if (target) {
-                return 'can';
-              }
-            }
-
-            if (
-              (y == 5 && S == 1) ||
-              (y == 4 && S == -1)
-              //&& ()
-              //тут идет проверка последнего хода противника от обработчика ходов
-            ) {
-              return 'can';
-              //удаляем div пешки сбоку по координатам
-            }
           }
+        }
 
-          if (obj.move.includes('k')) {
-          }
-
-          if (
-            obj.move.includes('one') &&
-            (Math.abs(chessDifX) > 1 || Math.abs(chessDifY) > 1)
-          ) {
-            return;
-          }
-
-          if (obj.move.includes('f') && chessDifX == 0 && chessDifY * S < 0) {
-            return 'can';
-          }
-
-          if (obj.move.includes('b') && chessDifX == 0 && chessDifY * S > 0) {
-            return 'can';
-          }
-
-          if (obj.move.includes('s') && chessDifY == 0 && chessDifX != 0) {
-            return 'can';
-          }
-
-          if (
-            obj.move.includes('d') &&
-            chessDifX != 0 &&
-            Math.abs(chessDifX) == Math.abs(chessDifY)
-          ) {
-            return 'can';
-          }
-
-          if (
-            obj.move.includes('h') &&
-            chessDifY != 0 &&
-            chessDifX != 0 &&
-            Math.abs(chessDifX) + Math.abs(chessDifY) == 3
-          ) {
-            return 'can';
-          }
+        function updateCoordinates() {
+          x = newX;
+          y = newY;
+          coorX = newCoorX;
+          coorY = newCoorY;
         }
       };
     };

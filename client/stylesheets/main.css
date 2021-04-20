@@ -76,7 +76,6 @@ img {
   position: relative;
   background-image: url('/chess/client/img/150.png');
   background-size: 100%;
-  z-index: 700;
 }
 
 .svg-layot {
