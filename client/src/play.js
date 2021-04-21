@@ -195,6 +195,11 @@ class Figure {
         ball.style.top = mouseY + 'px';
       }
 
+      let canMoveArray = canMove(coorX, coorY);
+
+      highlightMoves(canMoveArray.all);
+      highlightEnemy(canMoveArray.enemy);
+
       board.appendChild(ball);
 
       moveAt(event.pageX, event.pageY);
@@ -209,22 +214,14 @@ class Figure {
 
         let [newX, newY] = CalcChessCoor(newCoorX, newCoorY);
 
-        let S;
-        if (color == 'white') S = 1;
-        if (color == 'black') S = -1;
-
-        let canMoveArray = canMove(coorX, coorY);
-        // let ArrayFiguresInWay = checkFigures(canMoveArray);
-
-        function logic() {}
-
+        console.log(canMoveArray.all);
         if (
-          canMoveArray.find(
+          canMoveArray.all.find(
             (coordinate) => coordinate.x == newCoorX && coordinate.y == newCoorY
           )
         ) {
-          console.log(canMoveArray);
           console.log(newCoorX - coorX, newCoorY - coorY);
+          console.log(newCoorX, newCoorY);
           // clickFigure()
           if (checkFigures(newX, newY) == 'check') {
             putFigure(newCoorX, newCoorY);
@@ -238,22 +235,10 @@ class Figure {
 
         document.removeEventListener('mousemove', onMouseMove);
         ball.onmouseup = null;
+        svgLayot.innerHTML = null;
 
         function checkFigures(newX, newY) {
           let target = document.querySelector(`.square-${newX}${newY}`);
-          let result;
-
-          if (obj.name == 'p') {
-            if (Math.abs(newCoorX - coorX) == 1) {
-              if (target) {
-                target.remove();
-                result = 'check';
-              } else return;
-            } else {
-              if (target) return;
-              else result = 'check';
-            }
-          }
 
           if (target) {
             if (target.id != ball.id) {
@@ -279,68 +264,6 @@ class Figure {
             CalcChessCoor(a, b)[1]
           }`;
           ball.id = 'id' + CalcChessCoor(a, b)[0] + CalcChessCoor(a, b)[1];
-        }
-
-        function canMove(x, y) {
-          let result = borda;
-
-          function eAbs(elem) {
-            return Math.abs(elem);
-          }
-
-          switch (obj.name) {
-            case 'p':
-              console.log();
-              result = result.filter((elem) => {
-                if ((elem.y - y) * S == -1 && elem.x - x == 0) {
-                  return true;
-                }
-                if ((elem.y - y) * S == -1 && eAbs(elem.x - x) == 1)
-                  return true;
-                if (
-                  elem.x - x == 0 &&
-                  ((y == 6 && elem.y - y == -2) || (y == 1 && elem.y - y == 2))
-                )
-                  return true;
-              });
-              break;
-
-            case 'r':
-              result = result.filter((elem) => elem.x == x || elem.y == y);
-              break;
-            case 'n':
-              result = result.filter(
-                (elem) =>
-                  eAbs(elem.x - x) + eAbs(elem.y - y) == 3 &&
-                  elem.x - x != 0 &&
-                  elem.y - y != 0
-              );
-              break;
-            case 'b':
-              result = result.filter((elem) => {
-                eAbs(elem.x - x) == eAbs(elem.y - y);
-              });
-              break;
-            case 'q':
-              result = result.filter(
-                (elem) =>
-                  elem.x == x ||
-                  elem.y == y ||
-                  eAbs(elem.x - x) == eAbs(elem.y - y)
-              );
-              break;
-            case 'k':
-              result = result.filter(
-                (elem) =>
-                  eAbs(elem.x - x) + (eAbs(elem.y - y) == 1) ||
-                  eAbs(elem.x - x) + (elem.y - y) == 2
-              );
-              break;
-          }
-
-          
-
-          return result;
         }
 
         function clickFigure() {
@@ -417,6 +340,190 @@ class Figure {
           coorY = newCoorY;
         }
       };
+
+      function canMove(x, y) {
+        let result = borda;
+        let enemy = [];
+        let S;
+        if (gameColor.bot == color) S = 1;
+        else S = -1;
+
+        switch (obj.name) {
+          case 'p':
+            result = result.filter((elem) => {
+              let a = CalcChessCoor(elem.x, elem.y)[0];
+              let b = CalcChessCoor(elem.x, elem.y)[1];
+              let doc = document.getElementById('id' + a + b);
+
+              if (elem.x == x) {
+                if (elem.y - y == -S && !doc) return true;
+                if (
+                  (y == 6 && elem.y - y == -2 && color == gameColor.bot) ||
+                  (y == 1 && elem.y - y == 2 && color == gameColor.top)
+                )
+                  return true;
+              }
+              if ((elem.y - y) * S == -1 && eAbs(elem.x - x) == 1 && doc) {
+                if (
+                  doc.classList[1].slice(0, 1) != ball.classList[1].slice(0, 1)
+                )
+                  return true;
+              }
+            });
+
+            enemy = result.filter((elem) => {
+              let a = CalcChessCoor(elem.x, elem.y)[0];
+              let b = CalcChessCoor(elem.x, elem.y)[1];
+              let doc = document.getElementById('id' + a + b);
+
+              if (doc) {
+                return true;
+              }
+            });
+
+            break;
+
+          case 'r':
+            result = result.filter((elem) => elem.x == x || elem.y == y);
+            break;
+          case 'n':
+            result = result.filter(
+              (elem) =>
+                eAbs(elem.x - x) + eAbs(elem.y - y) == 3 &&
+                elem.x - x != 0 &&
+                elem.y - y != 0
+            );
+            break;
+          case 'b':
+            result = result.filter(
+              (elem) => eAbs(elem.x - x) == eAbs(elem.y - y)
+            );
+            break;
+          case 'q':
+            result = result.filter(
+              (elem) =>
+                elem.x == x ||
+                elem.y == y ||
+                eAbs(elem.x - x) == eAbs(elem.y - y)
+            );
+            break;
+          case 'k':
+            result = result.filter(
+              (elem) =>
+                eAbs(elem.x - x) + (eAbs(elem.y - y) == 1) ||
+                eAbs(elem.x - x) + (elem.y - y) == 2
+            );
+            break;
+        }
+
+        let t = [];
+        let tr = [];
+        let r = [];
+        let br = [];
+        let b = [];
+        let bl = [];
+        let l = [];
+        let tl = [];
+
+        for (let i = 0; i < result.length; i++) {
+          let res = result[i];
+          let rx = result[i].x;
+          let ry = result[i].y;
+
+          if (rx == x && ry < y) t.push(res);
+          if (rx > x && ry < y) tr.push(res);
+          if (rx > x && ry == y) r.push(res);
+          if (rx > x && ry > y) br.push(res);
+          if (rx == x && ry > y) b.push(res);
+          if (rx < x && ry > y) bl.push(res);
+          if (rx < x && ry == y) l.push(res);
+          if (rx < x && ry < y) tl.push(res);
+        }
+
+        t = analysisWay(t.sort((a, b) => b.y - a.y));
+        tr = analysisWay(tr.sort((a, b) => b.y - a.y));
+        r = analysisWay(r.sort((a, b) => a.x - b.x));
+        br = analysisWay(br.sort((a, b) => a.y - b.y));
+        b = analysisWay(b.sort((a, b) => a.y - b.y));
+        bl = analysisWay(bl.sort((a, b) => a.y - b.y));
+        l = analysisWay(l.sort((a, b) => b.x - a.x));
+        tl = analysisWay(tl.sort((a, b) => b.y - a.y));
+
+        if (obj.name != 'p')
+          result = t.all.concat(
+            tr.all.concat(
+              r.all.concat(
+                br.all.concat(b.all.concat(bl.all.concat(l.all.concat(tl.all))))
+              )
+            )
+          );
+
+        if (obj.name != 'p')
+          enemy = t.enemy.concat(
+            tr.enemy.concat(
+              r.enemy.concat(
+                br.enemy.concat(
+                  b.enemy.concat(bl.enemy.concat(l.enemy.concat(tl.enemy)))
+                )
+              )
+            )
+          );
+
+        return { all: result, enemy: enemy };
+
+        function analysisWay(arr) {
+          let arrAll = [];
+          let arrEnemy = [];
+          let flag = 0;
+
+          for (let i = 0; i < arr.length; i++) {
+            if (flag == 1) break;
+            let x = CalcChessCoor(arr[i].x, arr[i].y)[0];
+            let y = CalcChessCoor(arr[i].x, arr[i].y)[1];
+            let doc = document.getElementById('id' + x + y);
+            if (!doc) {
+              arrAll.push(arr[i]);
+            } else {
+              if (
+                doc.classList[1].slice(0, 1) != ball.classList[1].slice(0, 1)
+              ) {
+                flag = 1;
+                arrAll.push(arr[i]);
+                arrEnemy.push(arr[i]);
+              } else if (
+                doc.classList[1].slice(0, 1) == ball.classList[1].slice(0, 1)
+              ) {
+                break;
+              }
+            }
+          }
+          return { all: arrAll, enemy: arrEnemy };
+        }
+
+        function eAbs(elem) {
+          return Math.abs(elem);
+        }
+      }
+
+      function highlightMoves(arr) {
+        arr.forEach((elem) => {
+          let x = elem.x;
+          let y = elem.y;
+          svgLayot.innerHTML += `<circle cx="${x * kef + kef / 2}" cy="${
+            y * kef + kef / 2
+          }" r="5" fill="green" />`;
+        });
+      }
+
+      function highlightEnemy(arr) {
+        arr.forEach((elem) => {
+          let x = elem.x;
+          let y = elem.y;
+          svgLayot.innerHTML += `<circle cx="${x * kef + kef / 2}" cy="${
+            y * kef + kef / 2
+          }" r="20" fill="transparent" stroke="green" stroke-width="5"/>`;
+        });
+      }
     };
 
     ball.ondragstart = function () {
