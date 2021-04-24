@@ -6,10 +6,15 @@ const layot = document.getElementById('chessboard-layot');
 const arrayWords = ['a', 'b', 'c', 'd', 'e', 'f', 'j', 'h'];
 const kef = 60;
 let gameColor;
-let borda = [];
-for (let i = 0; i < 8; i++) {
-  for (let j = 0; j < 8; j++) {
-    borda.push({ x: i, y: j });
+const borda = [];
+
+initialization();
+
+function initialization() {
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      borda.push({ x: i, y: j });
+    }
   }
 }
 
@@ -151,14 +156,6 @@ class Figure {
 
     let [x, y] = CalcChessCoor(coorX, coorY);
 
-    if (y < 3) {
-      color = 'white';
-      name = 'w' + obj.name;
-    }
-    if (y > 6) {
-      color = 'black';
-      name = 'b' + obj.name;
-    }
 
     this.addFigure = function () {
       this.elemDiv.className = `piece ${name} square-${x}${y}`;
@@ -191,6 +188,7 @@ class Figure {
         mouseX = pageX - rect.x - coorX * kef - ball.offsetWidth / 2;
         mouseY = pageY - rect.y - coorY * kef - ball.offsetHeight / 2;
 
+        // if (mouseX > rect.x + rect.width) mouseX = rect.x + rect.width;
         ball.style.left = mouseX + 'px';
         ball.style.top = mouseY + 'px';
       }
@@ -199,7 +197,6 @@ class Figure {
 
       highlightMoves(canMoveArray.all);
       highlightEnemy(canMoveArray.enemy);
-
       board.appendChild(ball);
 
       moveAt(event.pageX, event.pageY);
@@ -214,28 +211,35 @@ class Figure {
 
         let [newX, newY] = CalcChessCoor(newCoorX, newCoorY);
 
-        console.log(canMoveArray.all);
-        if (
-          canMoveArray.all.find(
-            (coordinate) => coordinate.x == newCoorX && coordinate.y == newCoorY
-          )
-        ) {
-          console.log(newCoorX - coorX, newCoorY - coorY);
-          console.log(newCoorX, newCoorY);
-          // clickFigure()
-          if (checkFigures(newX, newY) == 'check') {
-            putFigure(newCoorX, newCoorY);
-            updateCoordinates();
-          } else {
-            putFigure(coorX, coorY);
-          }
+        if (x == newX && y == newY) {
+          putFigure(ball, coorX, coorY);
+
+          clickFigure();
         } else {
-          putFigure(coorX, coorY);
+          if (
+            canMoveArray.all.find(
+              (coordinate) =>
+                coordinate.x == newCoorX && coordinate.y == newCoorY
+            )
+          ) {
+            console.log(newCoorX, newCoorY);
+
+            if (checkFigures(newX, newY) == 'check') {
+              putFigure(ball, newCoorX, newCoorY);
+              updateCoordinates();
+              svgLayot.innerHTML = null;
+            } else {
+              putFigure(ball, coorX, coorY);
+            }
+          } else {
+            putFigure(ball, coorX, coorY);
+          }
         }
 
         document.removeEventListener('mousemove', onMouseMove);
         ball.onmouseup = null;
-        svgLayot.innerHTML = null;
+
+        // svgLayot.innerHTML = null;
 
         function checkFigures(newX, newY) {
           let target = document.querySelector(`.square-${newX}${newY}`);
@@ -252,31 +256,20 @@ class Figure {
           } else return 'check';
         }
 
-        function putFigure(a, b) {
-          ball.style.left = 0;
-          ball.style.top = 0;
-          ball.style.transform = `
-            matrix(1, 0, 0, 1, 
-            ${a * kef},
-            ${b * kef})
-          `;
-          ball.className = `piece ${name} square-${CalcChessCoor(a, b)[0]}${
-            CalcChessCoor(a, b)[1]
-          }`;
-          ball.id = 'id' + CalcChessCoor(a, b)[0] + CalcChessCoor(a, b)[1];
-        }
-
         function clickFigure() {
-          console.log('click x:' + x + ' y:' + y);
-          svgLayot.innerHTML = `<rect class="rect"
-            transform = "matrix(1, 0, 0, 1, ${coorX * kef},${coorY * kef})"/>`;
-
-          // svgLayot.innerHTML += `<circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" />`
+          let timerId;
+          svgLayot.innerHTML = null;
+          svgLayot.innerHTML += `<rect width="${kef}" height="${kef}" stroke="yellow" fill="silver" stroke-width="2" transform="matrix(1,0,0,1,${
+            coorX * kef
+          },${coorY * kef})"/>
+          `;
+          // svgLayot.style.zIndex = '00'
 
           svgLayot.addEventListener('click', onClickBoard);
+          highlightMoves(canMoveArray.all);
+          highlightEnemy(canMoveArray.enemy);
 
           function onClickBoard(event) {
-            svgLayot.innerHTML = '';
             const layot = svgLayot.getBoundingClientRect();
             const pageX = event.pageX;
             const pageY = event.pageY;
@@ -286,50 +279,26 @@ class Figure {
 
             [newX, newY] = CalcChessCoor(clickX, clickY);
 
-            if (canMove(x, y, newX, newY) == 'can')
+            if (
+              canMove(coorX, coorY).all.find(
+                (elem) => elem.x == clickX && elem.y == clickY
+              )
+            ) {
               animation(coorX, coorY, clickX, clickY);
-            else {
+
+              coorY = clickY;
+              coorX = clickX;
+              x = newX;
+              y = newY;
+              // clearTimeout(timerId);
+            } else {
+              svgLayot.innerHTML = null;
               svgLayot.removeEventListener('click', onClickBoard);
+              clearTimeout(timerId);
             }
 
             document.removeEventListener('mousemove', onMouseMove);
             ball.onmouseup = null;
-
-            function animation(fromX, fromY, toX, toY) {
-              console.log(fromX, fromY, toX, toY);
-              console.log(x, y, newX, newY);
-
-              let kefX = fromX >= toX ? 1 : -1;
-              let kefY = fromY >= toY ? 1 : -1;
-
-              let flagX = false;
-              let flagY = false;
-
-              let timerId = setTimeout(function move() {
-                if (fromY == toY) flagY = true;
-                if (fromX == toX) flagX = true;
-
-                if (flagY == true && flagX == true) {
-                  putFigure(toX, toY);
-                  clearTimeout(timerId);
-                  return;
-                }
-                if (flagX == false) fromX -= kefX * 0.25;
-                if (flagY == false) fromY -= kefY * 0.25;
-
-                ball.style.transform = `matrix(1, 0, 0, 1,${fromX * kef},${
-                  fromY * kef
-                })`;
-
-                coorY = fromY;
-                coorX = fromX;
-                x = newX;
-                y = newY;
-
-                timerId = setTimeout(move, 25);
-              }, 25);
-              svgLayot.removeEventListener('click', onClickBoard);
-            }
           }
         }
 
@@ -341,6 +310,16 @@ class Figure {
         }
       };
 
+      function isHeEnemy(x, y) {
+        let [a, b] = CalcChessCoor(x, y);
+        let doc = document.getElementById('id' + a + b);
+        if (doc) {
+          if (doc.classList[1].slice(0, 1) != ball.classList[1].slice(0, 1))
+            return 'enemy';
+          else return 'friend';
+        }
+      }
+
       function canMove(x, y) {
         let result = borda;
         let enemy = [];
@@ -351,8 +330,7 @@ class Figure {
         switch (obj.name) {
           case 'p':
             result = result.filter((elem) => {
-              let a = CalcChessCoor(elem.x, elem.y)[0];
-              let b = CalcChessCoor(elem.x, elem.y)[1];
+              let [a, b] = CalcChessCoor(elem.x, elem.y);
               let doc = document.getElementById('id' + a + b);
 
               if (elem.x == x) {
@@ -370,30 +348,31 @@ class Figure {
                   return true;
               }
             });
-
             enemy = result.filter((elem) => {
-              let a = CalcChessCoor(elem.x, elem.y)[0];
-              let b = CalcChessCoor(elem.x, elem.y)[1];
-              let doc = document.getElementById('id' + a + b);
-
-              if (doc) {
-                return true;
-              }
+              if (isHeEnemy(elem.x, elem.y) == 'enemy') return true;
             });
-
             break;
 
           case 'r':
             result = result.filter((elem) => elem.x == x || elem.y == y);
             break;
+
           case 'n':
-            result = result.filter(
-              (elem) =>
+            result = result.filter((elem) => {
+              if (
                 eAbs(elem.x - x) + eAbs(elem.y - y) == 3 &&
                 elem.x - x != 0 &&
                 elem.y - y != 0
-            );
+              ) {
+                if (!isHeEnemy(elem.x, elem.y)) return true;
+                if (isHeEnemy(elem.x, elem.y) == 'enemy') return true;
+              }
+            });
+            enemy = result.filter((elem) => {
+              if (isHeEnemy(elem.x, elem.y) == 'enemy') return true;
+            });
             break;
+
           case 'b':
             result = result.filter(
               (elem) => eAbs(elem.x - x) == eAbs(elem.y - y)
@@ -410,47 +389,54 @@ class Figure {
           case 'k':
             result = result.filter(
               (elem) =>
-                eAbs(elem.x - x) + (eAbs(elem.y - y) == 1) ||
-                eAbs(elem.x - x) + (elem.y - y) == 2
+                (eAbs(elem.x - x) == 1 && eAbs(elem.y - y) == 1) ||
+                eAbs(elem.x - x) + eAbs(elem.y - y) == 1
             );
             break;
         }
 
-        let t = [];
-        let tr = [];
-        let r = [];
-        let br = [];
-        let b = [];
-        let bl = [];
-        let l = [];
-        let tl = [];
-
-        for (let i = 0; i < result.length; i++) {
-          let res = result[i];
-          let rx = result[i].x;
-          let ry = result[i].y;
-
-          if (rx == x && ry < y) t.push(res);
-          if (rx > x && ry < y) tr.push(res);
-          if (rx > x && ry == y) r.push(res);
-          if (rx > x && ry > y) br.push(res);
-          if (rx == x && ry > y) b.push(res);
-          if (rx < x && ry > y) bl.push(res);
-          if (rx < x && ry == y) l.push(res);
-          if (rx < x && ry < y) tl.push(res);
+        if (obj.name != 'p' && obj.name != 'n') {
+          result = removeInaccessible(result).all;
+          enemy = removeInaccessible(result).enemy;
         }
 
-        t = analysisWay(t.sort((a, b) => b.y - a.y));
-        tr = analysisWay(tr.sort((a, b) => b.y - a.y));
-        r = analysisWay(r.sort((a, b) => a.x - b.x));
-        br = analysisWay(br.sort((a, b) => a.y - b.y));
-        b = analysisWay(b.sort((a, b) => a.y - b.y));
-        bl = analysisWay(bl.sort((a, b) => a.y - b.y));
-        l = analysisWay(l.sort((a, b) => b.x - a.x));
-        tl = analysisWay(tl.sort((a, b) => b.y - a.y));
+        return { all: result, enemy: enemy };
 
-        if (obj.name != 'p')
-          result = t.all.concat(
+        function removeInaccessible(arr) {
+          let t = [];
+          let tr = [];
+          let r = [];
+          let br = [];
+          let b = [];
+          let bl = [];
+          let l = [];
+          let tl = [];
+
+          for (let i = 0; i < arr.length; i++) {
+            let res = arr[i];
+            let rx = arr[i].x;
+            let ry = arr[i].y;
+
+            if (rx == x && ry < y) t.push(res);
+            if (rx > x && ry < y) tr.push(res);
+            if (rx > x && ry == y) r.push(res);
+            if (rx > x && ry > y) br.push(res);
+            if (rx == x && ry > y) b.push(res);
+            if (rx < x && ry > y) bl.push(res);
+            if (rx < x && ry == y) l.push(res);
+            if (rx < x && ry < y) tl.push(res);
+          }
+
+          t = analysisWay(t.sort((a, b) => b.y - a.y));
+          tr = analysisWay(tr.sort((a, b) => b.y - a.y));
+          r = analysisWay(r.sort((a, b) => a.x - b.x));
+          br = analysisWay(br.sort((a, b) => a.y - b.y));
+          b = analysisWay(b.sort((a, b) => a.y - b.y));
+          bl = analysisWay(bl.sort((a, b) => a.y - b.y));
+          l = analysisWay(l.sort((a, b) => b.x - a.x));
+          tl = analysisWay(tl.sort((a, b) => b.y - a.y));
+
+          let all = t.all.concat(
             tr.all.concat(
               r.all.concat(
                 br.all.concat(b.all.concat(bl.all.concat(l.all.concat(tl.all))))
@@ -458,8 +444,7 @@ class Figure {
             )
           );
 
-        if (obj.name != 'p')
-          enemy = t.enemy.concat(
+          let enemy = t.enemy.concat(
             tr.enemy.concat(
               r.enemy.concat(
                 br.enemy.concat(
@@ -468,8 +453,8 @@ class Figure {
               )
             )
           );
-
-        return { all: result, enemy: enemy };
+          return { all: all, enemy: enemy };
+        }
 
         function analysisWay(arr) {
           let arrAll = [];
@@ -478,8 +463,7 @@ class Figure {
 
           for (let i = 0; i < arr.length; i++) {
             if (flag == 1) break;
-            let x = CalcChessCoor(arr[i].x, arr[i].y)[0];
-            let y = CalcChessCoor(arr[i].x, arr[i].y)[1];
+            let [x, y] = CalcChessCoor(arr[i].x, arr[i].y);
             let doc = document.getElementById('id' + x + y);
             if (!doc) {
               arrAll.push(arr[i]);
@@ -499,10 +483,6 @@ class Figure {
           }
           return { all: arrAll, enemy: arrEnemy };
         }
-
-        function eAbs(elem) {
-          return Math.abs(elem);
-        }
       }
 
       function highlightMoves(arr) {
@@ -512,6 +492,10 @@ class Figure {
           svgLayot.innerHTML += `<circle cx="${x * kef + kef / 2}" cy="${
             y * kef + kef / 2
           }" r="5" fill="green" />`;
+          svgLayot.innerHTML += `<rect width="${kef}" height="${kef}" stroke="yellow" fill="silver" stroke-width="2" transform="matrix(1,0,0,1,${
+            coorX * kef
+          },${coorY * kef})"/>
+      `;
         });
       }
 
@@ -532,6 +516,10 @@ class Figure {
   }
 }
 
+function eAbs(elem) {
+  return Math.abs(elem);
+}
+
 function CalcChessCoor(a, b) {
   if (gameColor.bot == 'white') {
     return [a + 1, 8 - b];
@@ -545,5 +533,54 @@ function clearAll() {
   if (svg) {
     svg.remove();
   }
-  board.innerHTML = '';
+  board.innerHTML = null;
+  // svgLayot.innerHTML = null;
+}
+
+function animation(fromX, fromY, toX, toY) {
+  let [x, y] = CalcChessCoor(fromX, fromY);
+  let ball = document.getElementById('id' + x + y);
+  let kefX = fromX >= toX ? 1 : -1;
+  let kefY = fromY >= toY ? 1 : -1;
+
+  let flagX = false;
+  let flagY = false;
+
+  timerId = setTimeout(function move() {
+    if (fromY == toY) flagY = true;
+    if (fromX == toX) flagX = true;
+
+    if (flagY == true && flagX == true) {
+      putFigure(ball, toX, toY);
+      clearTimeout(timerId);
+      return;
+    }
+    if (flagX == false) fromX -= kefX * 0.25;
+    if (flagY == false) fromY -= kefY * 0.25;
+
+    ball.style.transform = `matrix(1, 0, 0, 1,${fromX * kef},${fromY * kef})`;
+
+    // coorY = fromY;
+    // coorX = fromX;
+    // x = newX;
+    // y = newY;
+
+    timerId = setTimeout(move, 25);
+  }, 25);
+  // svgLayot.removeEventListener('click', onClickBoard);
+  svgLayot.innerHTML = null;
+}
+
+function putFigure(htmlElem, a, b) {
+  let ball = htmlElem;
+  let [x, y] = CalcChessCoor(a, b);
+  ball.style.left = 0;
+  ball.style.top = 0;
+  ball.style.transform = `
+    matrix(1, 0, 0, 1, 
+    ${a * kef},
+    ${b * kef})
+  `;
+  ball.className = `piece ${name} square-${x}${y}`;
+  ball.id = 'id' + x + y;
 }
