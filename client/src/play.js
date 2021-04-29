@@ -1,31 +1,35 @@
 const newGame = document.getElementById('new-game');
-const deleteFigure = document.getElementById('delete-figure');
 const board = document.getElementById('chessboard-blank');
 const svgLayot = document.querySelector('.svg-layot');
 const layot = document.getElementById('chessboard-layot');
-const arrayWords = ['a', 'b', 'c', 'd', 'e', 'f', 'j', 'h'];
+
+//размер клетки
 const kef = 60;
-let gameColor;
-const borda = [];
+
 let onClickBoard;
+let gameColor;
+
+const matrixOfMoves = [];
+
 initialization();
 
 function initialization() {
     for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
-            borda.push({ x: i, y: j });
+            matrixOfMoves.push({ x: i, y: j });
         }
     }
 }
 
 newGame.addEventListener('click', function (event) {
-    clearNewGame();
+    clearAll();
     checkColorGame();
     generateCoordinate();
     generateFigures();
-}); //++
+});
 
 function generateCoordinate() {
+    const arrayWords = ['a', 'b', 'c', 'd', 'e', 'f', 'j', 'h'];
     const xmlns = 'http://www.w3.org/2000/svg';
     const kef = 12.5;
 
@@ -69,11 +73,27 @@ function generateCoordinate() {
     }
 
     layot.appendChild(svg);
-} //++
+}
 
 function generateFigures() {
-    const arrayFigures = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
-    const arrayPawns = ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'];
+    const pawn = { name: 'p', moves: ['pawn'] };
+    const rook = { name: 'r', moves: ['direct'] };
+    const knight = { name: 'n', moves: ['horse'] };
+    const bishop = { name: 'b', moves: ['diagonal'] };
+    const queen = { name: 'q', moves: ['diagonal', 'direct'] };
+    const king = { name: 'k', moves: ['king', 'diagonal', 'direct'] };
+
+    const arrayFigures = [
+        rook,
+        knight,
+        bishop,
+        queen,
+        king,
+        bishop,
+        knight,
+        rook,
+    ];
+    const arrayPawns = [pawn, pawn, pawn, pawn, pawn, pawn, pawn, pawn];
     const arrayChess = [
         arrayFigures,
         arrayPawns,
@@ -97,25 +117,20 @@ function generateFigures() {
     }
 }
 
-function newFigure(x, y, name) {
+function newFigure(x, y, obj) {
     const div = document.createElement('div');
     if ((gameColor == 'white' && y > 5) || (gameColor == 'black' && y < 2))
         div.style.color = 'white';
     if ((gameColor == 'black' && y > 5) || (gameColor == 'white' && y < 2))
         div.style.color = 'black';
     div.className = `piece ${
-        div.style.color.slice(0, 1) + name
+        div.style.color.slice(0, 1) + obj.name
     } square-${x}${y}`;
     div.style.backgroundImage = `url('/chess/client/img/figures/${
-        div.style.color.slice(0, 1) + name
+        div.style.color.slice(0, 1) + obj.name
     }.png')`;
-    div.style.transform = `
-		matrix(1, 0, 0, 1,
-		${x * kef},
-		${y * kef}
-	  `;
+    div.style.transform = `matrix(1, 0, 0, 1,${x * kef},${y * kef}`;
     div.id = 'id' + x + y;
-    div.style.cursor = 'grabbing';
     board.appendChild(div);
 
     let mouseX, mouseY;
@@ -135,12 +150,17 @@ function newFigure(x, y, name) {
 
             div.style.left = mouseX + 'px';
             div.style.top = mouseY + 'px';
+            div.style.transform = `matrix(1, 0, 0, 1,${x * kef},${y * kef}`;
         }
         moveAt(event.pageX, event.pageY);
 
-		clearStep();
-		highlightMoves(x, y, canMove(x, y).all);
-		highlightEnemy(canMove(x, y).enemy);
+        clearStep();
+        const moves = obj.moves;
+        const canMoves = returnPossibleMoves(moves, x, y);
+        div.style.zIndex = 1001;
+
+        highlightMoves(x, y, canMoves.all);
+        highlightEnemy(canMoves.enemy);
 
         div.onmouseup = function () {
             let xDif = Math.round(mouseX / kef);
@@ -153,9 +173,9 @@ function newFigure(x, y, name) {
                 putFigure(x, y, x, y);
                 clickFigure();
             } else if (x != newX || y != newY) {
-				clearStep();
+                clearStep();
                 if (
-                    canMove(x, y).all.find(
+                    canMoves.all.find(
                         (elem) => elem.x == newX && elem.y == newY
                     )
                 ) {
@@ -166,9 +186,9 @@ function newFigure(x, y, name) {
                     }
                     if (
                         checkAndRemoveTarget(newX, newY) ==
-                        'ahtung! открывается шах, или под шах или прочие причины'
+                        'ahtung! если дали шах'
                     ) {
-                        putFigure(x, y, newX, newY);
+                        putFigure(x, y, newX, newY); //\
                     }
                 } else {
                     putFigure(x, y, x, y);
@@ -177,16 +197,14 @@ function newFigure(x, y, name) {
 
             document.removeEventListener('mousemove', onMouseMove);
             div.onmouseup = null;
+            div.style.zIndex = null;
 
             function checkAndRemoveTarget(newX, newY) {
                 let target = document.querySelector(`.square-${newX}${newY}`);
 
                 if (target) {
                     if (target.id != div.id) {
-                        if (
-                            target.classList[1].slice(0, 1) !=
-                            div.classList[1].slice(0, 1)
-                        ) {
+                        if (target.style.color != div.style.color) {
                             target.remove();
                             return 'sector clear';
                         }
@@ -198,8 +216,8 @@ function newFigure(x, y, name) {
                 svgLayot.removeEventListener('click', onClickBoard, true);
 
                 clearStep();
-                highlightMoves(x, y, canMove(x, y).all);
-                highlightEnemy(canMove(x, y).enemy);
+                highlightMoves(x, y, canMoves.all);
+                highlightEnemy(canMoves.enemy);
 
                 onClickBoard = function (event) {
                     const layot = svgLayot.getBoundingClientRect();
@@ -210,7 +228,7 @@ function newFigure(x, y, name) {
                     let clickY = Math.floor((pageY - layot.y) / 60);
 
                     if (
-                        canMove(x, y).all.find(
+                        canMoves.all.find(
                             (elem) => elem.x == clickX && elem.y == clickY
                         )
                     ) {
@@ -249,19 +267,18 @@ function clearStep() {
     svgLayot.innerHTML = null;
 }
 
-function clearNewGame() {
+function clearAll() {
+    clearStep();
     let svg = document.getElementById('svg');
     if (svg) {
         svg.remove();
     }
     board.innerHTML = null;
-    svgLayot.innerHTML = null;
-    document.removeEventListener('click', onClickBoard, true);
-    onClickBoard = null;
+    svgLayot.removeEventListener('click', onClickBoard, true);
 }
 
-async function animation(fromX, fromY, toX, toY) {
-    return await new Promise((resolve) => {
+function animation(fromX, fromY, toX, toY) {
+    return new Promise((resolve) => {
         let div = document.getElementById('id' + fromX + fromY);
         let kefX = fromX >= toX ? 1 : -1;
         let kefY = fromY >= toY ? 1 : -1;
@@ -269,15 +286,12 @@ async function animation(fromX, fromY, toX, toY) {
         let flagX = false;
         let flagY = false;
 
-        // let timerId =
         setTimeout(function move() {
             if (fromY == toY) flagY = true;
             if (fromX == toX) flagX = true;
 
             if (flagY == true && flagX == true) {
-                // putFigure(div.id, toX, toY);
                 resolve('foo');
-
                 return;
             }
             if (flagX == false) fromX -= kefX * 0.25;
@@ -296,173 +310,173 @@ async function animation(fromX, fromY, toX, toY) {
 }
 
 function putFigure(x, y, newX, newY) {
-    let div = document.getElementById('id' + x + y);
+    const div = document.getElementById('id' + x + y);
     div.style.left = 0;
     div.style.top = 0;
-    div.style.transform = `
-	  matrix(1, 0, 0, 1, 
-	  ${newX * kef},
-	  ${newY * kef})
-	`;
+    div.style.transform = `matrix(1, 0, 0, 1, ${newX * kef},${newY * kef})`;
     div.classList.remove(div.classList[2]);
     div.classList.add(`square-${newX}${newY}`);
     div.id = 'id' + newX + newY;
 }
 
-function canMove(x, y) {
-    let div = document.getElementById('id' + x + y);
-    let color;
-    let name;
-
-    name = div.classList[1].slice(1, 2);
-    if (div.classList[1].slice(0, 1) == 'w') {
-        color = 'white';
-    } else {
-        color = 'black';
-    }
-
-    let result = borda;
+function returnPossibleMoves(moves, x, y) {
+    const div = document.getElementById('id' + x + y);
+    const color = div.style.color;
+    let direct = { all: [], enemy: [] };
+    let diagonal = { all: [], enemy: [] };
+    let all = [];
     let enemy = [];
 
-    let S;
-    if (gameColor == color) S = 1;
-    else S = -1;
+    const S = gameColor === color ? 1 : -1;
 
-    switch (name) {
-        case 'p':
-            result = result.filter((elem) => {
-                let a = elem.x;
-                let b = elem.y;
-                let target = document.getElementById('id' + a + b);
+    // ходы по 'прямо' и 'по-диагонали' - разбиваю каждый тип на 4 направления(массивы),
+    //нахожу ближайшие фигуры по каждому из них и фильтрую до этих фигур
 
-                if (elem.x == x) {
-                    if (elem.y - y == -S && !target) return true;
-                    if (
-                        (y == 6 && elem.y - y == -2 && color == gameColor) ||
-                        (y == 1 && elem.y - y == 2 && color == gameColor)
-                    )
-                        return true;
-                }
-                if ((elem.y - y) * S == -1 && eAbs(elem.x - x) == 1 && target) {
-                    if (
-                        target.classList[1].slice(0, 1) !=
-                        div.classList[1].slice(0, 1)
-                    )
-                        return true;
-                }
-            });
-            enemy = result.filter((elem) => {
-                if (isHeEnemy(elem.x, elem.y) == 'enemy') return true;
-            });
-            break;
-
-        case 'r':
-            result = result.filter((elem) => elem.x == x || elem.y == y);
-            break;
-
-        case 'n':
-            result = result.filter((elem) => {
-                if (
-                    eAbs(elem.x - x) + eAbs(elem.y - y) == 3 &&
-                    elem.x - x != 0 &&
-                    elem.y - y != 0
-                ) {
-                    if (!isHeEnemy(div.id, elem.x, elem.y)) return true;
-                    if (isHeEnemy(div.id, elem.x, elem.y) == 'enemy')
-                        return true;
-                }
-            });
-            enemy = result.filter((elem) => {
-                if (isHeEnemy(div.id, elem.x, elem.y) == 'enemy') return true;
-            });
-            break;
-
-        case 'b':
-            result = result.filter(
-                (elem) => eAbs(elem.x - x) == eAbs(elem.y - y)
-            );
-            break;
-        case 'q':
-            result = result.filter(
-                (elem) =>
-                    elem.x == x ||
-                    elem.y == y ||
-                    eAbs(elem.x - x) == eAbs(elem.y - y)
-            );
-            break;
-        case 'k':
-            result = result.filter(
-                (elem) =>
-                    (eAbs(elem.x - x) == 1 && eAbs(elem.y - y) == 1) ||
-                    eAbs(elem.x - x) + eAbs(elem.y - y) == 1
-            );
-            break;
-    }
-
-    if (name != 'p' && name != 'n') {
-        result = removeInaccessible(result).all;
-        enemy = removeInaccessible(result).enemy;
-    }
-
-    return { all: result, enemy: enemy };
-
-    function removeInaccessible(arr) {
-        let t = [];
-        let tr = [];
-        let r = [];
-        let br = [];
-        let b = [];
-        let bl = [];
-        let l = [];
-        let tl = [];
-
-        for (let i = 0; i < arr.length; i++) {
-            let res = arr[i];
-            let rx = arr[i].x;
-            let ry = arr[i].y;
-
-            if (rx == x && ry < y) t.push(res);
-            if (rx > x && ry < y) tr.push(res);
-            if (rx > x && ry == y) r.push(res);
-            if (rx > x && ry > y) br.push(res);
-            if (rx == x && ry > y) b.push(res);
-            if (rx < x && ry > y) bl.push(res);
-            if (rx < x && ry == y) l.push(res);
-            if (rx < x && ry < y) tl.push(res);
-        }
-
-        t = analysisWay(t.sort((a, b) => b.y - a.y));
-        tr = analysisWay(tr.sort((a, b) => b.y - a.y));
-        r = analysisWay(r.sort((a, b) => a.x - b.x));
-        br = analysisWay(br.sort((a, b) => a.y - b.y));
-        b = analysisWay(b.sort((a, b) => a.y - b.y));
-        bl = analysisWay(bl.sort((a, b) => a.y - b.y));
-        l = analysisWay(l.sort((a, b) => b.x - a.x));
-        tl = analysisWay(tl.sort((a, b) => b.y - a.y));
-
-        let all = t.all.concat(
-            tr.all.concat(
-                r.all.concat(
-                    br.all.concat(
-                        b.all.concat(bl.all.concat(l.all.concat(tl.all)))
-                    )
-                )
-            )
+    if (moves.includes('direct')) {
+        const up = analysisWay(
+            matrixOfMoves
+                .filter((elem) => elem.x == x && elem.y < y)
+                .sort((a, b) => b.y - a.y)
         );
 
-        let enemy = t.enemy.concat(
-            tr.enemy.concat(
-                r.enemy.concat(
-                    br.enemy.concat(
-                        b.enemy.concat(
-                            bl.enemy.concat(l.enemy.concat(tl.enemy))
-                        )
-                    )
-                )
-            )
+        const right = analysisWay(
+            matrixOfMoves
+                .filter((elem) => elem.x > x && elem.y == y)
+                .sort((a, b) => a.x - b.x)
         );
-        return { all: all, enemy: enemy };
+        const down = analysisWay(
+            matrixOfMoves
+                .filter((elem) => elem.x == x && elem.y > y)
+                .sort((a, b) => a.y - b.y)
+        );
+        const left = analysisWay(
+            matrixOfMoves
+                .filter((elem) => elem.x < x && elem.y == y)
+                .sort((a, b) => b.x - a.x)
+        );
+
+        direct.all = [].concat(up.all, down.all, left.all, right.all);
+        direct.enemy = [].concat(up.enemy, down.enemy, left.enemy, right.enemy);
     }
+
+    if (moves.includes('diagonal')) {
+        const upRight = analysisWay(
+            matrixOfMoves
+                .filter(
+                    (elem) =>
+                        elem.x > x &&
+                        elem.y < y &&
+                        eAbs(elem.x - x) == eAbs(elem.y - y)
+                )
+                .sort((a, b) => b.y - a.y)
+        );
+
+        const downRight = analysisWay(
+            matrixOfMoves
+                .filter(
+                    (elem) =>
+                        elem.x > x &&
+                        elem.y > y &&
+                        eAbs(elem.x - x) == eAbs(elem.y - y)
+                )
+                .sort((a, b) => a.y - b.y)
+        );
+
+        const downLeft = analysisWay(
+            matrixOfMoves
+                .filter(
+                    (elem) =>
+                        elem.x < x &&
+                        elem.y > y &&
+                        eAbs(elem.x - x) == eAbs(elem.y - y)
+                )
+                .sort((a, b) => a.y - b.y)
+        );
+
+        const upLeft = analysisWay(
+            matrixOfMoves
+                .filter(
+                    (elem) =>
+                        elem.x < x &&
+                        elem.y < y &&
+                        eAbs(elem.x - x) == eAbs(elem.y - y)
+                )
+                .sort((a, b) => b.y - a.y)
+        );
+        console.log(upRight);
+        diagonal.all = [].concat(
+            upRight.all,
+            downRight.all,
+            downLeft.all,
+            upLeft.all
+        );
+        diagonal.enemy = [].concat(
+            upRight.enemy,
+            downRight.enemy,
+            downLeft.enemy,
+            upLeft.enemy
+        );
+    }
+
+    all = [].concat(direct.all, diagonal.all);
+    enemy = [].concat(direct.enemy, diagonal.enemy);
+
+    if (moves.includes('pawn')) {
+        all = matrixOfMoves.filter((elem) => {
+            let target = document.getElementById('id' + elem.x + elem.y);
+            let targetBeforeDouble = document.getElementById(
+                'id' + elem.x + (y - S)
+            );
+
+            if (elem.x == x) {
+                if (elem.y - y == -S && !target) return true;
+                if (!target && elem.y - y == -2 * S && !targetBeforeDouble) {
+                    if (
+                        (y == 6 && color == gameColor) ||
+                        (y == 1 && color != gameColor)
+                    ) {
+                        return true;
+                    }
+                }
+            }
+
+            if ((elem.y - y) * S == -1 && eAbs(elem.x - x) == 1 && target) {
+                if (target.style.color != div.style.color) return true;
+            }
+        });
+        enemy = all.filter(
+            (elem) => (elem.y - y) * S == -1 && eAbs(elem.x - x) == 1
+        );
+    }
+
+    if (moves.includes('horse')) {
+        all = matrixOfMoves.filter((elem) => {
+            if (
+                eAbs(elem.x - x) + eAbs(elem.y - y) == 3 &&
+                elem.x - x != 0 &&
+                elem.y - y != 0
+            ) {
+                if (!isEnemy(div.id, elem.x, elem.y)) return true;
+                if (isEnemy(div.id, elem.x, elem.y)) return true;
+            }
+        });
+        enemy = all.filter((elem) => {
+            if (isEnemy(div.id, elem.x, elem.y)) return true;
+        });
+    }
+
+    if (moves.includes('king')) {
+        all = all.filter(
+            (elem) =>
+                (eAbs(elem.x - x) == 1 && eAbs(elem.y - y) == 1) ||
+                eAbs(elem.x - x) + eAbs(elem.y - y) == 1
+        );
+        enemy = all.filter((elem) => {
+            if (isEnemy(div.id, elem.x, elem.y)) return true;
+        });
+    }
+
+    return { all, enemy };
 
     function analysisWay(arr) {
         let arrAll = [];
@@ -477,20 +491,12 @@ function canMove(x, y) {
             if (!target) {
                 arrAll.push(arr[i]);
             } else {
-                if (div) {
-                    if (
-                        target.classList[1].slice(0, 1) !=
-                        div.classList[1].slice(0, 1)
-                    ) {
-                        flag = 1;
-                        arrAll.push(arr[i]);
-                        arrEnemy.push(arr[i]);
-                    } else if (
-                        target.classList[1].slice(0, 1) ==
-                        div.classList[1].slice(0, 1)
-                    ) {
-                        break;
-                    }
+                if (target.style.color != div.style.color) {
+                    flag = 1;
+                    arrAll.push(arr[i]);
+                    arrEnemy.push(arr[i]);
+                } else if (target.style.color == div.style.color) {
+                    break;
                 }
             }
         }
@@ -498,42 +504,38 @@ function canMove(x, y) {
     }
 }
 
-function isHeEnemy(id, x, y) {
-    let div = document.getElementById(id);
+function isEnemy(id, x, y) {
+    let doc = document.getElementById(id);
     let target = document.getElementById('id' + x + y);
     if (target) {
-        if (target.classList[1].slice(0, 1) != div.classList[1].slice(0, 1))
-            return 'enemy';
-        else return 'friend';
+        if (target.style.color != doc.style.color) return true;
+        else return false;
     }
 }
 
-function highlightMoves(x, y, arr) {
-    arr.forEach((elem) => {
-        let ex = elem.x;
-        let ey = elem.y;
-        svgLayot.innerHTML += `<circle cx="${ex * kef + kef / 2}" cy="${
-            ey * kef + kef / 2
-        }" r="5" fill="green" />`;
-        svgLayot.innerHTML += `<rect width="${kef}" height="${kef}" stroke="yellow" fill="silver" stroke-width="2" transform="matrix(1,0,0,1,${
-            x * kef
-        },${y * kef})"/>
+function highlightMoves(a, b, arr) {
+    arr.forEach(({ x, y }) => {
+        svgLayot.innerHTML += `<circle class="circle-our" cx="${
+            x * kef + kef / 2
+        }" cy="${y * kef + kef / 2}"/>`;
+        svgLayot.innerHTML += `<rect width="${kef}" height="${kef}" transform="matrix(1,0,0,1,${
+            a * kef
+        },${b * kef})"/>
 	`;
     });
 }
 
 function highlightEnemy(arr) {
-    arr.forEach((elem) => {
-        let ex = elem.x;
-        let ey = elem.y;
-        svgLayot.innerHTML += `<circle cx="${ex * kef + kef / 2}" cy="${
-            ey * kef + kef / 2
-        }" r="20" fill="transparent" stroke="green" stroke-width="5"/>`;
+    arr.forEach(({ x, y }) => {
+        svgLayot.innerHTML += `<circle class="circle-enemy" cx="${
+            x * kef + kef / 2
+        }" cy="${y * kef + kef / 2}"/>`;
     });
 }
 
 function checkColorGame() {
-    const checkBox = document.querySelectorAll('input[name="choice"]');
+    const choiceColorGame = document.getElementById('choice-color-game');
+    const checkBox = choiceColorGame.querySelectorAll('input[name="choice"]');
     let selectValue;
 
     for (const rb of checkBox) {
