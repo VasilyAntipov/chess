@@ -165,7 +165,7 @@ rect {
 }
 
 .circle-enemy {
-  r: 20;
+  r: 30;
   fill : transparent;
   stroke: rgba(100, 100, 100, 0.4);
   stroke-width : 5

@@ -3,13 +3,13 @@ const board = document.getElementById('chessboard-blank');
 const svgLayot = document.querySelector('.svg-layot');
 const layot = document.getElementById('chessboard-layot');
 
-//размер клетки
-const kef = 60;
+let gameColor;
+let gameType;
+const matrixOfMoves = [];
+const kef = 60; //размер клетки
 
 let onClickBoard;
-let gameColor;
-
-const matrixOfMoves = [];
+let flagRunAnimation;
 
 initialization();
 
@@ -24,6 +24,7 @@ function initialization() {
 newGame.addEventListener('click', function (event) {
     clearAll();
     checkColorGame();
+    checkTypeGame();
     generateCoordinate();
     generateFigures();
 });
@@ -33,7 +34,7 @@ function generateCoordinate() {
     const xmlns = 'http://www.w3.org/2000/svg';
     const kef = 12.5;
 
-    let svg = document.createElementNS(xmlns, 'svg');
+    const svg = document.createElementNS(xmlns, 'svg');
     svg.id = 'svg';
     svg.setAttributeNS(null, 'class', 'coordinates-outside');
     svg.setAttributeNS(null, 'viewBox', '0 0 100 100');
@@ -42,7 +43,7 @@ function generateCoordinate() {
     svg.style.display = 'block';
     for (let j = 0; j < 2; j++) {
         for (let i = 0; i < 8; i++) {
-            let text = document.createElementNS(xmlns, 'text');
+            const text = document.createElementNS(xmlns, 'text');
             text.setAttributeNS(null, 'class', `coordinate-grey`);
             switch (j) {
                 case 0:
@@ -123,6 +124,10 @@ function newFigure(x, y, obj) {
         div.style.color = 'white';
     if ((gameColor == 'black' && y > 5) || (gameColor == 'white' && y < 2))
         div.style.color = 'black';
+
+    if (gameType == 'normal' && y < 2) {
+        div.style.zIndex = 250;
+    }
     div.className = `piece ${
         div.style.color.slice(0, 1) + obj.name
     } square-${x}${y}`;
@@ -147,10 +152,10 @@ function newFigure(x, y, obj) {
 
             mouseX = pageX - rect.x - x * kef - div.offsetWidth / 2;
             mouseY = pageY - rect.y - y * kef - div.offsetHeight / 2;
-
+            
             div.style.left = mouseX + 'px';
             div.style.top = mouseY + 'px';
-            div.style.transform = `matrix(1, 0, 0, 1,${x * kef},${y * kef}`;
+            // div.style.transform = `matrix(1, 0, 0, 1,${mouseX},${mouseY}`;
         }
         moveAt(event.pageX, event.pageY);
 
@@ -162,12 +167,13 @@ function newFigure(x, y, obj) {
         highlightMoves(x, y, canMoves.all);
         highlightEnemy(canMoves.enemy);
 
-        div.onmouseup = function () {
-            let xDif = Math.round(mouseX / kef);
-            let yDif = Math.round(mouseY / kef);
 
-            let newX = x + xDif;
-            let newY = y + yDif;
+        div.onmouseup = function () {
+            let xDifference = Math.round(mouseX / kef);
+            let yDifference = Math.round(mouseY / kef);
+
+            let newX = x + xDifference;
+            let newY = y + yDifference;
 
             if (x == newX && y == newY) {
                 putFigure(x, y, x, y);
@@ -232,17 +238,19 @@ function newFigure(x, y, obj) {
                             (elem) => elem.x == clickX && elem.y == clickY
                         )
                     ) {
-                        animation(x, y, clickX, clickY).then(() => {
-                            clearStep();
-                            putFigure(x, y, clickX, clickY);
-                            svgLayot.removeEventListener(
-                                'click',
-                                onClickBoard,
-                                true
-                            );
-                            x = clickX;
-                            y = clickY;
-                        });
+                        if (flagRunAnimation != 'run')
+                            animation(x, y, clickX, clickY).then(() => {
+                                clearStep();
+                                checkAndRemoveTarget(clickX, clickY);
+                                putFigure(x, y, clickX, clickY);
+                                svgLayot.removeEventListener(
+                                    'click',
+                                    onClickBoard,
+                                    true
+                                );
+                                x = clickX;
+                                y = clickY;
+                            });
                     } else {
                         putFigure(x, y, x, y);
                         clearStep();
@@ -269,7 +277,7 @@ function clearStep() {
 
 function clearAll() {
     clearStep();
-    let svg = document.getElementById('svg');
+    const svg = document.getElementById('svg');
     if (svg) {
         svg.remove();
     }
@@ -279,28 +287,28 @@ function clearAll() {
 
 function animation(fromX, fromY, toX, toY) {
     return new Promise((resolve) => {
-        let div = document.getElementById('id' + fromX + fromY);
-        let kefX = fromX >= toX ? 1 : -1;
-        let kefY = fromY >= toY ? 1 : -1;
+        const div = document.getElementById('id' + fromX + fromY);
+        let directionFactorX = fromX >= toX ? 1 : -1;
+        let directionFactorY = fromY >= toY ? 1 : -1;
 
-        let flagX = false;
-        let flagY = false;
+        let flagStopAnimateX = false;
+        let flagStopAnimateY = false;
 
         setTimeout(function move() {
-            if (fromY == toY) flagY = true;
-            if (fromX == toX) flagX = true;
+            if (fromY == toY) flagStopAnimateY = true;
+            if (fromX == toX) flagStopAnimateX = true;
 
-            if (flagY == true && flagX == true) {
+            if (flagStopAnimateY == true && flagStopAnimateX == true) {
                 resolve('foo');
+                flagRunAnimation = 'none';
                 return;
-            }
-            if (flagX == false) fromX -= kefX * 0.25;
-            if (flagY == false) fromY -= kefY * 0.25;
+            } else flagRunAnimation = 'run';
+            if (flagStopAnimateX == false) fromX -= directionFactorX * 0.25;
+            if (flagStopAnimateY == false) fromY -= directionFactorY * 0.25;
 
-            if (div)
-                div.style.transform = `matrix(1, 0, 0, 1,${fromX * kef},${
-                    fromY * kef
-                })`;
+            div.style.transform = `matrix(1, 0, 0, 1,${fromX * kef},${
+                fromY * kef
+            })`;
             x = fromX;
             y = fromY;
 
@@ -327,10 +335,10 @@ function returnPossibleMoves(moves, x, y) {
     let all = [];
     let enemy = [];
 
-    const S = gameColor === color ? 1 : -1;
+    const directFactorDownOrUp = gameColor === color ? 1 : -1;
 
-    // ходы по 'прямо' и 'по-диагонали' - разбиваю каждый тип на 4 направления(массивы),
-    //нахожу ближайшие фигуры по каждому из них и фильтрую до этих фигур
+    // ходы по (горизонтали и вертикали), и по-диагонали - разбиваю каждый тип на 4 направления(массивы),
+    //нахожу ближайшие блокирующие ход фигуры по каждому из них и фильтрую до этих фигур
 
     if (moves.includes('direct')) {
         const up = analysisWay(
@@ -403,7 +411,6 @@ function returnPossibleMoves(moves, x, y) {
                 )
                 .sort((a, b) => b.y - a.y)
         );
-        console.log(upRight);
         diagonal.all = [].concat(
             upRight.all,
             downRight.all,
@@ -425,12 +432,16 @@ function returnPossibleMoves(moves, x, y) {
         all = matrixOfMoves.filter((elem) => {
             let target = document.getElementById('id' + elem.x + elem.y);
             let targetBeforeDouble = document.getElementById(
-                'id' + elem.x + (y - S)
+                'id' + elem.x + (y - directFactorDownOrUp)
             );
 
             if (elem.x == x) {
-                if (elem.y - y == -S && !target) return true;
-                if (!target && elem.y - y == -2 * S && !targetBeforeDouble) {
+                if (elem.y - y == -directFactorDownOrUp && !target) return true;
+                if (
+                    !target &&
+                    elem.y - y == -2 * directFactorDownOrUp &&
+                    !targetBeforeDouble
+                ) {
                     if (
                         (y == 6 && color == gameColor) ||
                         (y == 1 && color != gameColor)
@@ -440,12 +451,18 @@ function returnPossibleMoves(moves, x, y) {
                 }
             }
 
-            if ((elem.y - y) * S == -1 && eAbs(elem.x - x) == 1 && target) {
+            if (
+                (elem.y - y) * directFactorDownOrUp == -1 &&
+                eAbs(elem.x - x) == 1 &&
+                target
+            ) {
                 if (target.style.color != div.style.color) return true;
             }
         });
         enemy = all.filter(
-            (elem) => (elem.y - y) * S == -1 && eAbs(elem.x - x) == 1
+            (elem) =>
+                (elem.y - y) * directFactorDownOrUp == -1 &&
+                eAbs(elem.x - x) == 1
         );
     }
 
@@ -505,8 +522,8 @@ function returnPossibleMoves(moves, x, y) {
 }
 
 function isEnemy(id, x, y) {
-    let doc = document.getElementById(id);
-    let target = document.getElementById('id' + x + y);
+    const doc = document.getElementById(id);
+    const target = document.getElementById('id' + x + y);
     if (target) {
         if (target.style.color != doc.style.color) return true;
         else return false;
@@ -515,9 +532,11 @@ function isEnemy(id, x, y) {
 
 function highlightMoves(a, b, arr) {
     arr.forEach(({ x, y }) => {
-        svgLayot.innerHTML += `<circle class="circle-our" cx="${
-            x * kef + kef / 2
-        }" cy="${y * kef + kef / 2}"/>`;
+        const target = document.getElementById('id' + x + y);
+        if (!target)
+            svgLayot.innerHTML += `<circle class="circle-our" cx="${
+                x * kef + kef / 2
+            }" cy="${y * kef + kef / 2}"/>`;
         svgLayot.innerHTML += `<rect width="${kef}" height="${kef}" transform="matrix(1,0,0,1,${
             a * kef
         },${b * kef})"/>
@@ -530,9 +549,13 @@ function highlightEnemy(arr) {
         svgLayot.innerHTML += `<circle class="circle-enemy" cx="${
             x * kef + kef / 2
         }" cy="${y * kef + kef / 2}"/>`;
+        const target = document.getElementById('id' + x + y);
     });
 }
 
+function highlightCell(x,y) {
+
+}
 function checkColorGame() {
     const choiceColorGame = document.getElementById('choice-color-game');
     const checkBox = choiceColorGame.querySelectorAll('input[name="choice"]');
@@ -546,4 +569,18 @@ function checkColorGame() {
     }
     if (selectValue == 'white') gameColor = 'white';
     else gameColor = 'black';
+}
+function checkTypeGame() {
+    const choiceTypeGame = document.getElementById('choice-type-game');
+    const checkBox = choiceTypeGame.querySelectorAll('input[name="choice"]');
+    let selectValue;
+
+    for (const rb of checkBox) {
+        if (rb.checked) {
+            selectValue = rb.value;
+            break;
+        }
+    }
+    if (selectValue == 'normal') gameType = 'normal';
+    else gameType = 'test';
 }
